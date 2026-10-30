@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重置系统密码 · 遗忘 root/普通用户密码恢复</title>
+<style>
+:root {
+  --bg: #eefaf5; --bg-2: #f6fcf9; --surface: #ffffff;
+  --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+  --accent: #10b981; --accent-dark: #065f46; --accent-soft: #d7f5e6;
+  --border: rgba(0,0,0,.06);
+  --code-bg: #ffffff; --code-text: #000000;
+  --comment: #8a94a0; --keyword: #0f766e;
+  --shadow: 0 4px 24px rgba(0,0,0,.04), 0 16px 48px rgba(0,0,0,.06);
+  --radius: 24px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; display: flex; min-height: 100vh; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif; font-size: 17px; background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 50%, #fff 100%); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+.sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: linear-gradient(180deg, #ffffff 0%, #f0faf4 100%); border-right: 1px solid rgba(4,120,87,.14); box-shadow: 0 0 40px rgba(0,0,0,.08); display: flex; flex-direction: column; z-index: 100; }
+.sidebar-brand { padding: 26px 22px 20px; border-bottom: 1px solid rgba(4,120,87,.12); background: rgba(255,255,255,.7); }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 800; color: #065f46; letter-spacing: -.01em; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(16,185,129,.22); }
+.brand-sub { font-size: 13px; color: #4b5563; margin-top: 6px; font-weight: 600; }
+.progress { height: 3px; background: #d7f5e6; margin: 0 22px 14px; border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+.toc-scroll::-webkit-scrollbar { width: 6px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: #c7e6d8; border-radius: 3px; }
+.toc-scroll::-webkit-scrollbar-track { background: transparent; }
+.toc-group { margin-bottom: 16px; }
+.toc-group-title { display: flex; align-items: center; gap: 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #065f46; font-weight: 800; padding: 10px 10px 6px; }
+.toc-group-title::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+.toc-chap { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #1f2937; text-decoration: none; font-size: 14.5px; line-height: 1.45; font-weight: 600; transition: all .15s ease; }
+.toc-chap:hover { background: #eaf7f0; color: #065f46; }
+.toc-chap.active { background: #d7f5e6; color: #04563e; font-weight: 800; box-shadow: inset 3px 0 0 var(--accent); }
+.chap-num { width: 24px; height: 24px; border-radius: 8px; background: #e2f3ea; color: #065f46; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; border: 1px solid rgba(4,120,87,.16); }
+.toc-chap.active .chap-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,210,106,.35); }
+.chap-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toc-sub { display: block; position: relative; padding: 6px 10px 6px 44px; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13.5px; line-height: 1.4; font-weight: 500; transition: all .15s ease; }
+.toc-sub::before { content: ''; position: absolute; left: 30px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: #5ce6ad; }
+.toc-sub:hover { background: #eaf7f0; color: #065f46; }
+.toc-sub.active { background: #d7f5e6; color: #04563e; font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+.main { margin-left: 300px; flex: 1; min-width: 0; padding: 50px 60px 120px; }
+.main-inner { max-width: 880px; margin: 0 auto; }
+.page-header { margin-bottom: 40px; }
+.page-header h1 { font-size: 42px; font-weight: 900; letter-spacing: -.04em; margin: 0; color: var(--accent-dark); line-height: 1.1; }
+.page-header .subtitle { color: var(--text-2); font-size: 18px; margin-top: 12px; font-weight: 500; }
+.doc-lead { background: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 24px 30px; box-shadow: 0 4px 24px rgba(0,0,0,.04); color: var(--text-2); font-size: 16px; line-height: 1.75; margin-bottom: 40px; }
+.doc-lead strong { color: var(--accent-dark); }
+.card { background: var(--surface); border-radius: var(--radius); padding: 40px 46px; box-shadow: var(--shadow); margin-bottom: 34px; transition: transform .25s ease, box-shadow .25s ease; scroll-margin-top: 40px; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06), 0 24px 64px rgba(0,0,0,.08); }
+.card h2 { font-size: 28px; font-weight: 800; margin: 0 0 18px; letter-spacing: -.03em; color: var(--accent-dark); padding-bottom: 14px; border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--accent) 0%, rgba(16,185,129,.22) 70%, transparent 100%) 1; }
+.card h3 { font-size: 21px; font-weight: 700; margin: 26px 0 12px; color: #065f46; display: flex; align-items: center; gap: 10px; }
+.card h3::before { content: ''; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.card h4 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+.card p { margin: 10px 0; color: var(--text-2); font-size: 16px; }
+.card ul, .card ol { margin: 10px 0; padding-left: 24px; color: var(--text-2); font-size: 16px; }
+.card li { margin: 5px 0; }
+.card code:not(.hl) { background: #d7f5e6; color: #065f46; border-radius: 5px; padding: 1px 6px; font-size: 16px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+.code-card { border-radius: 12px; overflow: hidden; margin: 14px 0; background: var(--code-bg); border: 1px solid rgba(4,120,87,.14); box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.code-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: #f2faf5; border-bottom: 1px solid rgba(4,120,87,.10); }
+.dots { display: flex; gap: 7px; }
+.dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+.lang { margin-left: 4px; font-size: 13px; color: #065f46; font-weight: 600; letter-spacing: .03em; flex: 1; }
+.copy { background: #ffffff; border: 1px solid rgba(4,120,87,.25); color: #065f46; font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s ease; }
+.copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+.code-card pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+.code-card code { font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; font-size: 15.5px; line-height: 1.7; color: #000000 !important; display: block; }
+.code-card .c { color: #8a94a0 !important; }
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 12px; border: 1px solid rgba(4,120,87,.12); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: #fff; }
+th { background: #edf9f2; color: #065f46; text-align: left; padding: 10px 14px; font-weight: 700; white-space: nowrap; }
+td { padding: 9px 14px; border-top: 1px solid rgba(4,120,87,.08); color: var(--text-2); }
+td code { background: #d7f5e6; color: #065f46; border-radius: 4px; padding: 0 5px; font-size: 14px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+.note { background: #f0faf5; border: 1px solid rgba(4,120,87,.16); border-left: 4px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 14px 0; color: #374151; font-size: 15.5px; line-height: 1.75; }
+.note strong { color: #065f46; }
+.note.warn { background: #fff8ec; border-color: rgba(245,158,11,.3); border-left-color: #f59e0b; color: #78350f; }
+.note.warn strong { color: #b45309; }
+.backtop { position: fixed; right: 28px; bottom: 28px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,.45); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 99; }
+.backtop.show { opacity: 1; pointer-events: auto; }
+.backtop:hover { transform: translateY(-3px); }
+#toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px); background: #065f46; color: #fff; padding: 10px 22px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 200; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; padding: 30px 20px 80px; } .card { padding: 28px 22px; } .page-header h1 { font-size: 30px; } }
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-brand"><div class="brand"><span class="brand-dot"></span>重置系统密码</div><div class="brand-sub">遗忘 root / 普通用户密码恢复</div></div>
+  <div class="progress"><div class="progress-bar"></div></div>
+  <nav class="toc-scroll" id="toc"><div class="toc-group"><div class="toc-group-title">Ubuntu / Debian</div><a href="#sec-ubuntu" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">Ubuntu 22.04 重置密码</span></a><a href="#t1-1" class="toc-sub">进入 GRUB 单用户(救援)模式</a><a href="#t1-2" class="toc-sub">挂载并修改密码</a></div><div class="toc-group"><div class="toc-group-title">RHEL 系</div><a href="#sec-centos" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">CentOS/Rocky 重置密码</span></a><a href="#t2-1" class="toc-sub">rd.break 方法</a><a href="#t2-2" class="toc-sub">init=/bin/sh 方法</a></div><div class="toc-group"><div class="toc-group-title">通用 &amp; 安全</div><a href="#sec-common" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">修改密码通用命令</span></a><a href="#t3-1" class="toc-sub">passwd / chpasswd</a><a href="#t3-2" class="toc-sub">忘记密码后的安全提醒</a></div></nav>
+</aside>
+<main class="main"><div class="main-inner">
+<header class="page-header"><h1>重置系统密码</h1><div class="subtitle">忘记 root / 普通用户密码时的恢复流程（Ubuntu / CentOS / Rocky）</div></header>
+<div class="doc-lead">本手册面向<b>系统测试工程师</b>，讲解忘记系统密码后如何在不重装系统的情况下恢复：涵盖 <b>Ubuntu/Debian</b>（GRUB 单用户救援模式）与 <b>CentOS/Rocky</b>（rd.break 或 init=/bin/sh）两种主流路线，以及常规改密命令。所有需要执行的命令都带<b>一键复制</b>。请遵守所在组织对服务器管理的授权规定，仅在本人有权管理的机器上操作。</div>
+<section class="card" id="sec-ubuntu"><h2>1. Ubuntu 22.04 重置密码</h2><h3 id="t1-1">进入 GRUB 单用户（救援）模式</h3><p>Ubuntu 无法直接进单用户模式，需要在 GRUB 启动菜单里编辑内核引导参数，追加 <code>single</code>（或 <code>init=/bin/bash</code>），让内核以单用户方式启动。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code>1. 选择要启动的内核，按 e 进入编辑
+2. 找到 linux ... 那行（以 linux /boot/vmlinuz 开头）
+3. 在行尾追加： single  （或 init=/bin/bash）
+4. 按 Ctrl+X 或 F10 启动</code></pre></div><div class="note">解释：在 GRUB 菜单按 <code>e</code> 编辑；<code>single</code> 让内核进入单用户；<code>init=/bin/bash</code> 则以 bash 作为 init 直接启动 shell。若开机没看到 GRUB 菜单，启动瞬间按住 <code>Shift</code>（传统 BIOS）或连按 <code>Esc</code>/<code>F1</code>（UEFI 部分机型）唤出。</div><h3 id="t1-2">挂载并修改密码</h3><p>进入单用户/救援 shell 后，根文件系统此时通常是只读（ro）挂载，需先 <code>mount -o remount,rw /</code> 改成读写，再用 <code>passwd root</code> 设新密码（注意 Ubuntu 默认限制 root 登录，若你只记得普通用户则改其用户名）。改完 <code>mount -o remount,ro /</code> 再重启。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code>mount -o remount,rw /
+passwd root
+# passwd 用户名
+sync
+reboot</code></pre></div><div class="note">解释：<code>mount -o remount,rw /</code> 把根文件系统改为可写（改密码必须要写 /etc/shadow）；<code>passwd root</code> 设置 root 新密码；<code>reboot</code> 重启进入正常系统。若提示 <code>Authentication token manipulation error</code>，多半是还没成功 remount 为 rw。</div></section>
+<section class="card" id="sec-centos"><h2>2. CentOS / Rocky / RHEL 重置密码</h2><h3 id="t2-1">rd.break 方法</h3><p>RHEL 系（含 CentOS 7+、Rocky）常用 <code>rd.break</code>：在内核参数末尾追加该参数并 <code>Ctrl+X</code>，会进入一个临时 shell；此时根分区挂载在 <code>/sysroot</code> 下，需 chroot 后改密码。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code>1. 选择内核，按 e 编辑
+2. 在 linux16 / linux 行末追加： rd.break
+3. 按 Ctrl+X 启动</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code>chroot /sysroot
+# mount -o remount,rw /sysroot
+# chroot /sysroot
+passwd root
+touch /.autorelabel
+exit
+reboot</code></pre></div><div class="note">解释：<code>chroot /sysroot</code> 切换到真实根文件系统目录才能操作；<code>passwd root</code> 改密码；<code>touch /.autorelabel</code> 让 SELinux 下次启动自动重新标记（避免因密码/文件上下文改变导致无法登录），最后 <code>exit</code> 退出 chroot、<code>reboot</code> 重启。</div><h3 id="t2-2">init=/bin/sh 方法</h3><p>若 <code>rd.break</code> 不生效（部分版本/云镜像差异），改用 <code>init=/bin/sh</code> 直接以 bash 作为 init 进入单用户 shell。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code>1. 按 e 编辑目标内核
+2. 在 linux16 / linux 行末追加： init=/bin/sh
+3. 按 Ctrl+X 启动</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code>mount -o remount,rw /
+passwd root
+touch /.autorelabel
+reboot</code></pre></div><div class="note">解释：与 Ubuntu 类似，用 <code>init=/bin/sh</code> 直接进入单用户 bash；<code>mount -o remount,rw /</code> 写根分区；<code>passwd root</code> 改密；<code>touch /.autorelabel</code> 供 SELinux；最后 <code>reboot</code>。个别环境 <code>reboot</code> 不可用时可 <code>exec /sbin/init</code></div></section>
+<section class="card" id="sec-common"><h2>3. 修改密码通用命令</h2><h3 id="t3-1">passwd / chpasswd</h3><p>进入系统后修改密码最常用 <code>passwd</code>（交互式）和 <code>chpasswd</code>（非交互，适合批量/脚本）。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code>passwd
+sudo passwd root
+echo 'root:NewPass123' | sudo chpasswd
+sudo chpasswd &lt; userpass.txt</code></pre></div><div class="note">解释：<code>passwd</code> 交互让输入两次新密码；<code>chpasswd</code> 从 stdin 读取 <code>用户名:密码</code> 行批量设置，适合脚本/多机。注意不要让密码出现在 shell 历史中，脚本用后及时清理。</div><h3 id="t3-2">忘记密码后的安全提醒</h3><div class="note warn"><strong>安全与授权提醒</strong><ul><li>重置密码会破坏原密码，操作前确认是本人/本组织有权管理的机器，避免影响他人使用。</li><li>用救援/单用户改密后，务必处理 SELinux（<code>/.autorelabel</code>）与磁盘只读问题，避免重启后无法登录。</li><li>生产机改密建议先在维护窗口执行，改完立即测试能否登录，并及时同步给相关的同事/运维。</li><li>避免长期使用弱密码或说密码明文暴露；有运维平台/带外管理（IPMI）的机器也可考虑通过 BMC 远程 KVM 进单用户改密。</li></ul></div></section>
+</div></main><button class="backtop" title="回到顶部">↑</button><div id="toast">已复制到剪贴板</div>
+<script>
+var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a')); var sections = tocLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+function onScroll(){ var pos=window.scrollY,cur=-1; for(var i=0;i<sections.length;i++){if(sections[i]&&sections[i].offsetTop-120<=pos)cur=i;} tocLinks.forEach(function(a,i){a.classList.toggle('active',i===cur);}); var h=document.documentElement,max=h.scrollHeight-h.clientHeight,pct=max>0?(pos/max)*100:0; document.querySelector('.progress-bar').style.width=pct+'%'; document.querySelector('.backtop').classList.toggle('show',pos>400); }
+function copyText(t){ if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t); return new Promise(function(resolve,reject){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');resolve();}catch(e){reject(e);}document.body.removeChild(ta);}); }
+function showToast(){var t=document.getElementById('toast');t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(function(){t.classList.remove('show');},1400);}
+document.addEventListener('click',function(e){var btn=e.target.closest('.copy');if(!btn)return;var code=btn.closest('.code-card').querySelector('code'),text=code.innerText;copyText(text).then(function(){var old=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');showToast();setTimeout(function(){btn.textContent=old;btn.classList.remove('copied');},1600);});});
+window.addEventListener('scroll',onScroll,{passive:true});onScroll();document.querySelector('.backtop').addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+</script></body></html>
