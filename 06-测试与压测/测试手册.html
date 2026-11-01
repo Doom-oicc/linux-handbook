@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测试环境搭建与压测手册</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --text-3: #86868b;
+    --accent: #0071e3;
+    --accent-soft: #e8f2ff;
+    --border: #e3e3e6;
+    --code-bg: #1d1d1f;
+    --code-text: #f5f5f7;
+    --comment: #98989d;
+    --keyword: #64b5f6;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.7;
+  }
+
+  /* ===== 顶部栏 ===== */
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(245,245,247,.82);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+  .topbar-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .topbar .dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .topbar h1 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -.01em;
+  }
+  .topbar .count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ===== 布局 ===== */
+  .layout {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  /* ===== 侧边栏 ===== */
+  nav.toc {
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  nav.toc a {
+    display: block;
+    padding: 7px 12px;
+    border-radius: 9px;
+    font-size: 14px;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease;
+  }
+  nav.toc a:hover { background: rgba(0,0,0,.05); color: var(--text); }
+  nav.toc a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ===== 主内容 ===== */
+  main { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
+
+  section.card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 34px 38px;
+    box-shadow: var(--shadow);
+    scroll-margin-top: 90px;
+  }
+  section.card > h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -.02em;
+  }
+  section.card > p.lead {
+    margin: 0 0 26px;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 30px 0 12px;
+    letter-spacing: -.01em;
+  }
+  h3:first-of-type { margin-top: 0; }
+
+  p { margin: 12px 0; font-size: 15px; }
+  p, li { color: var(--text); }
+
+  /* 提示框 */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #1d3a5f;
+    margin: 14px 0;
+  }
+  .note.warn {
+    border-left-color: #f5a623;
+    background: #fff7e6;
+    color: #7a5200;
+  }
+  .note code, .note strong { color: inherit; }
+  p code, li code {
+    font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: #f0f0f2;
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  /* 引用输出示例 */
+  .output {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: #f8f8fa;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text-2);
+    white-space: pre-wrap;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+
+  /* ===== 代码块 ===== */
+  .code-card {
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 14px 0;
+    background: var(--code-bg);
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  }
+  .code-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: #2c2c30;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .code-head .lang {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #a1a1a6;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .code-head .copy {
+    margin-left: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #d2d2d7;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px;
+    padding: 3px 12px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .code-head .copy:hover { background: rgba(255,255,255,.16); color: #fff; }
+  .code-head .copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  pre {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  pre code {
+    font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    color: var(--code-text);
+    white-space: pre;
+  }
+  .tok-comment { color: var(--comment); }
+  .tok-kw { color: var(--keyword); }
+
+  /* ===== 表格 ===== */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+    min-width: 420px;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    background: #f2f2f4;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #efeff1;
+    color: var(--text-2);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code, th code {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: #f0f0f2;
+    padding: 1px 6px;
+    border-radius: 5px;
+    color: var(--text);
+  }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(29,29,31,.92);
+    color: #fff;
+    padding: 9px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s ease;
+    z-index: 99;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; gap: 24px; padding-top: 20px; }
+    nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    section.card { padding: 26px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="dot"></span>
+    <h1>测试环境搭建与压测手册</h1>
+    <span class="count">Server Ops · 2026</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="toc" id="toc">
+    <a href="#sec-1" class="active">1. 基础软件包</a>
+    <a href="#sec-2">2. 时间同步 chrony</a>
+    <a href="#sec-3">3. 显卡驱动与 CUDA</a>
+    <a href="#sec-4">4. 硬盘挂载</a>
+    <a href="#sec-5">5. 系统压测 stress</a>
+    <a href="#sec-6">6. GPU 压测</a>
+  </nav>
+
+  <main>
+
+    <!-- ============ 1. 基础软件包 ============ -->
+    <section class="card" id="sec-1">
+      <h2>1. Ubuntu 基础软件包</h2>
+      <p class="lead">一次性装齐运维与压测所需的全部工具。</p>
+
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo apt install vim ssh dkms ipmitool htop lm-sensors make gcc g++ \
+  curl wget git stress stress-ng net-tools ethtool btop tmux \
+  fio iperf3 memtester smartmontools nvme-cli -y</code></pre>
+      </div>
+    </section>
+
+    <!-- ============ 2. 时间同步 ============ -->
+    <section class="card" id="sec-2">
+      <h2>2. 时间同步（chrony）</h2>
+      <p class="lead">换源、HTTPS 证书校验、日志时间戳都依赖准确的系统时间。</p>
+
+      <h3>安装并启用</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># Ubuntu / Debian
+sudo apt install chrony -y
+sudo systemctl enable --now chrony</code></pre>
+      </div>
+
+      <h3>配置时间源</h3>
+      <p>编辑配置文件：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo nano /etc/chrony/chrony.conf</code></pre>
+      </div>
+      <p>国内环境推荐使用阿里云 / 腾讯云 NTP 服务器，注释掉默认的 <code>pool</code>，替换为：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">conf</span><button class="copy">复制</button></div>
+        <pre><code># pool ntp.ubuntu.com iburst maxsources 4   ← 注释掉默认源
+pool ntp.aliyun.com iburst
+pool ntp.tencent.com iburst</code></pre>
+      </div>
+      <p>重启使配置生效：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo systemctl restart chrony</code></pre>
+      </div>
+
+      <h3>验证</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 查看当前时间同步状态
+chronyc tracking
+
+# 查看已配置的时间源
+chronyc sources -v</code></pre>
+      </div>
+      <div class="note">命令 <code>chronyc tracking</code> 会显示 <code>System time</code> 偏移量，单位为秒。偏移接近 0 即表示同步正常。</div>
+    </section>
+
+    <!-- ============ 3. 显卡驱动 ============ -->
+    <section class="card" id="sec-3">
+      <h2>3. NVIDIA 显卡驱动与 CUDA 安装</h2>
+      <p class="lead">先禁用开源驱动，再装闭源驱动，最后装 CUDA 工具链。</p>
+
+      <h3>3.1 禁用 Nouveau 开源驱动</h3>
+      <p>安装前首先检查是否加载了 nouveau：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>lsmod | grep nouveau</code></pre>
+      </div>
+      <p>创建黑名单配置文件：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo tee /etc/modprobe.d/blacklist-nouveau.conf &lt;&lt; 'EOF'
+blacklist nouveau
+options nouveau modeset=0
+EOF</code></pre>
+      </div>
+      <p>刷新内核引导镜像并重启：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo update-initramfs -u
+sudo reboot</code></pre>
+      </div>
+      <p>重启后再次执行 <code>lsmod | grep nouveau</code>，应无输出，说明 nouveau 已被禁用。</p>
+
+      <h3>3.2 安装显卡驱动</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo ./NVIDIA-Linux-x86_64-595.84.run -no-x-check --dkms</code></pre>
+      </div>
+
+      <h3>3.3 安装 CUDA</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo ./cuda_13.1.1_590.48.01_linux.run --silent --toolkit --samples \
+  &amp;&amp; sudo sh -c 'VERSION=$(ls /usr/local/ | grep -E "^cuda-[0-9.]+" | cut -d- -f2 | sort -V | tail -n 1) \
+  &amp;&amp; cat &gt;&gt; /etc/profile &lt;&lt; EOF
+export PATH=/usr/local/cuda-$VERSION/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-$VERSION/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+EOF' \
+  &amp;&amp; source /etc/profile \
+  &amp;&amp; nvcc -V \
+  &amp;&amp; cd gpu-burn/ &amp;&amp; sudo make</code></pre>
+      </div>
+
+      <h3>3.4 内核更新后重新编译驱动模块</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo dkms autoinstall</code></pre>
+      </div>
+      <div class="note">DKMS 会自动为新内核重新编译驱动模块，因此升级内核后需执行此命令，否则 <code>nvidia-smi</code> 可能报驱动未加载。</div>
+    </section>
+
+    <!-- ============ 4. 硬盘挂载 ============ -->
+    <section class="card" id="sec-4">
+      <h2>4. 硬盘挂载与开机自动挂载</h2>
+      <p class="lead">以把新硬盘分区 <code>/dev/sdb1</code> 永久挂载到 <code>/mnt/data</code> 为例。</p>
+
+      <h3>4.1 查看磁盘与分区</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 查看所有磁盘和分区（推荐，输出直观）
+lsblk
+
+# 或查看分区详情
+sudo fdisk -l</code></pre>
+      </div>
+
+      <h3>4.2 新建分区（新硬盘无分区时）</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo fdisk /dev/sdb
+# 依次输入：n（新建分区）→ p（主分区）→ 回车（默认分区号）→ 回车（默认起始扇区）→ 回车（默认结束扇区）→ w（写入保存）</code></pre>
+      </div>
+
+      <h3>4.3 格式化分区</h3>
+      <div class="note">新分区必须先格式化才能挂载。文件系统常用 <code>ext4</code>（通用）或 <code>xfs</code>（大容量高并发推荐）。</div>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 格式化为 ext4
+sudo mkfs.ext4 /dev/sdb1
+
+# 或格式化为 xfs
+# sudo mkfs.xfs /dev/sdb1</code></pre>
+      </div>
+
+      <h3>4.4 创建挂载点</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo mkdir -p /mnt/data</code></pre>
+      </div>
+
+      <h3>4.5 查看分区 UUID</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo blkid /dev/sdb1</code></pre>
+      </div>
+      <p>输出示例：</p>
+      <div class="output">/dev/sdb1: UUID="a1b2c3d4-1234-5678-9abc-def012345678" TYPE="ext4"</div>
+      <p>复制其中的 UUID 值（不含引号），下一步写入 fstab 要用。</p>
+
+      <h3>4.6 临时挂载测试</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo mount /dev/sdb1 /mnt/data
+df -h /mnt/data</code></pre>
+      </div>
+
+      <h3>4.7 写入 fstab 实现开机自动挂载</h3>
+      <p>编辑 <code>/etc/fstab</code>：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo nano /etc/fstab</code></pre>
+      </div>
+      <p>在文末另起一行，按下面的格式写入：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">fstab</span><button class="copy">复制</button></div>
+        <pre><code>UUID=a1b2c3d4-1234-5678-9abc-def012345678  /mnt/data  ext4  defaults  0  0</code></pre>
+      </div>
+      <div class="note">fstab 每行 6 个字段，用空格或 Tab 分隔：</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>字段</th><th>含义</th><th>本例取值</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>设备标识（UUID 或设备路径）</td><td><code>UUID=a1b2...</code></td></tr>
+            <tr><td>2</td><td>挂载点</td><td><code>/mnt/data</code></td></tr>
+            <tr><td>3</td><td>文件系统类型</td><td><code>ext4</code></td></tr>
+            <tr><td>4</td><td>挂载选项</td><td><code>defaults</code></td></tr>
+            <tr><td>5</td><td>dump 备份标志（0=不备份）</td><td><code>0</code></td></tr>
+            <tr><td>6</td><td>开机自检顺序（0=不检查）</td><td><code>0</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.8 验证并生效</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 检查 fstab 语法是否正确，无报错即挂载所有未挂载的分区
+sudo mount -a
+
+# 确认已挂载成功
+df -h /mnt/data</code></pre>
+      </div>
+      <div class="note"><code>mount -a</code> 无输出即表示成功；如果报错，说明 fstab 写错了（常见原因：UUID 抄错、文件系统类型不符、挂载点不存在）。</div>
+
+      <h3>4.9 卸载（可选）</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>sudo umount /mnt/data</code></pre>
+      </div>
+    </section>
+
+    <!-- ============ 5. 系统压测 ============ -->
+    <section class="card" id="sec-5">
+      <h2>5. 系统压测（stress）</h2>
+      <p class="lead">对 CPU / 内存 / 磁盘施加负载，暴露系统在高压下的不稳定问题。stress 只打负载，不产出报告。</p>
+
+      <h3>5.1 常用参数</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>参数</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td><code>-c N</code> / <code>--cpu N</code></td><td>开 N 个进程执行 sqrt() 计算，压测 CPU</td></tr>
+            <tr><td><code>-m N</code> / <code>--vm N</code></td><td>开 N 个进程执行 malloc()/free()，压测内存</td></tr>
+            <tr><td><code>--vm-bytes B</code></td><td>每个内存进程分配 B 字节（默认 256M）</td></tr>
+            <tr><td><code>-d N</code> / <code>--hdd N</code></td><td>开 N 个进程写临时文件，压测磁盘</td></tr>
+            <tr><td><code>--hdd-bytes B</code></td><td>每个磁盘进程写入 B 字节</td></tr>
+            <tr><td><code>-i N</code> / <code>--io N</code></td><td>开 N 个进程执行 sync()，压测 I/O</td></tr>
+            <tr><td><code>-t N</code> / <code>--timeout N</code></td><td>压测持续时间（默认秒，可用 m/h/d 后缀）</td></tr>
+            <tr><td><code>-v</code> / <code>--verbose</code></td><td>详细输出</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <strong>关键点（重点辨析）：</strong><code>-m</code>、<code>-d</code> 后面跟的都是<strong>进程个数</strong>，不是容量；每个进程占用多少由 <code>--vm-bytes</code> / <code>--hdd-bytes</code> 决定。<br><br>
+        总占用 = <strong>进程数 × 单进程容量</strong>。例如 <code>-m 256 --vm-bytes 1G</code> 表示 256 个进程 × 各 1G = 共 256G，而不是"系统有 256 个内存"。<br><br>
+        原写法 <code>stress -c CPU核心数 -m 内存总容量 --vm-bytes 1G</code> 是错误的——<code>-m</code> 位置填了容量而不是进程数。
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>压测对象</th><th>进程数参数</th><th>容量参数</th><th>总占用</th></tr></thead>
+          <tbody>
+            <tr><td>CPU</td><td><code>-c N</code></td><td>无（CPU 无容量概念）</td><td>N 核满载</td></tr>
+            <tr><td>内存</td><td><code>-m N</code></td><td><code>--vm-bytes B</code></td><td>N × B</td></tr>
+            <tr><td>磁盘</td><td><code>-d N</code></td><td><code>--hdd-bytes B</code></td><td>N × B</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>5.2 压测前先摸清机器配置</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>nproc        # 查看 CPU 逻辑核心数
+free -h      # 查看内存总量
+df -h        # 查看磁盘剩余空间</code></pre>
+      </div>
+      <div class="note warn">
+        压测参数要根据上面的真实数值来定，否则容易把机器压崩：<br>
+        • <code>-c</code> 不要超过 <code>nproc</code> 的值<br>
+        • <code>-m × --vm-bytes</code> 的内存总量控制在物理内存的 70%~80% 以内<br>
+        • 内存总量超过物理内存会触发 swap 甚至 OOM（系统强杀进程）
+      </div>
+
+      <h3>5.3 CPU 压测</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 打满全部 CPU 核心，压测 60 秒
+stress -c $(nproc) -t 60s -v
+
+# 或指定核心数，例如只压测 8 核
+stress -c 8 -t 60s -v</code></pre>
+      </div>
+      <div class="note"><code>$(nproc)</code> 会自动获取当前机器 CPU 核心数，打满所有核。</div>
+      <p>配套监控：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 监控每个核心的温度（每秒刷新）
+watch -n 1 sensors
+
+# 查看 CPU / 内存实时占用
+htop</code></pre>
+      </div>
+
+      <h3>5.4 内存压测</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 开 4 个进程，每个分配 2G 内存，共占用约 8G，压测 60 秒
+stress -m 4 --vm-bytes 2G -t 60s -v
+
+# 例如要占满约 16G：8 个进程 × 2G
+stress -m 8 --vm-bytes 2G -t 60s -v</code></pre>
+      </div>
+      <div class="note">分配内存前先确认剩余内存足够，可用 <code>free -h</code> 查看。分配总量超过物理内存会触发 swap 或导致 OOM。</div>
+
+      <h3>5.5 磁盘压测</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 开 2 个进程，每个写入 1G 临时文件，压测磁盘写入
+stress -d 2 --hdd-bytes 1G -t 60s -v
+
+# 大文件长时间磁盘压测：2 个进程 × 5G
+stress -d 2 --hdd-bytes 5G -t 5m -v</code></pre>
+      </div>
+      <div class="note"><code>stress</code> 的磁盘压测是写临时文件到当前目录，压测结束后自动删除。它会占用当前目录所在分区的空间，请确保该分区有足够剩余空间（可用 <code>df -h</code> 查看）。</div>
+      <p>需要更精确的磁盘吞吐 / IOPS 测试，建议用 <code>fio</code>：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 顺序写测试
+fio --name=seqwrite --rw=write --bs=1M --size=4G --numjobs=1 --direct=1 --runtime=60 --time_based
+
+# 随机读测试
+fio --name=randread --rw=randread --bs=4k --size=4G --numjobs=1 --direct=1 --runtime=60 --time_based</code></pre>
+      </div>
+
+      <h3>5.6 组合压测（CPU + 内存 + 磁盘同时）</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 8 核 CPU + 2 个内存进程各 2G + 2 个磁盘进程各 1G，同时压测 2 分钟
+stress -c 8 -m 2 --vm-bytes 2G -d 2 --hdd-bytes 1G -t 2m -v</code></pre>
+      </div>
+      <p>逐段拆解：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>参数</th><th>含义</th><th>效果</th></tr></thead>
+          <tbody>
+            <tr><td><code>-c 8</code></td><td>开 8 个进程跑 sqrt()</td><td>压满 8 个 CPU 核心</td></tr>
+            <tr><td><code>-m 2</code></td><td>开 2 个内存进程</td><td>压测内存</td></tr>
+            <tr><td><code>--vm-bytes 2G</code></td><td>每个内存进程分配 2G</td><td>内存总占用 = 2 × 2G = 4G</td></tr>
+            <tr><td><code>-d 2</code></td><td>开 2 个进程写临时文件</td><td>压测磁盘写入</td></tr>
+            <tr><td><code>--hdd-bytes 1G</code></td><td>每个磁盘进程写 1G</td><td>磁盘总写入 ≈ 2G</td></tr>
+            <tr><td><code>-t 2m</code></td><td>持续 2 分钟</td><td>时间到自动停止</td></tr>
+            <tr><td><code>-v</code></td><td>详细模式</td><td>实时打印各进程状态</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">整条命令的意思：同时压满 8 核 CPU + 吃 4G 内存 + 写 2G 磁盘，跑 2 分钟后自动停，过程中打印细节。</div>
+      <p>换到真实机器（以 32 核 / 32G 内存为例）的组合示例：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>stress -c 32 -m 8 --vm-bytes 2G -d 4 --hdd-bytes 2G -t 5m -v
+# CPU 32 核全满；内存 8×2G=16G（占 32G 的一半）；磁盘 4×2G=8G 写入</code></pre>
+      </div>
+
+      <h3>5.7 停止压测</h3>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 未设置 -t 时，按 Ctrl+C 停止
+# 或后台残留进程用 pkill 结束
+pkill stress</code></pre>
+      </div>
+    </section>
+
+    <!-- ============ 6. GPU 压测 ============ -->
+    <section class="card" id="sec-6">
+      <h2>6. GPU 压测与监控（gpu_burn）</h2>
+      <p class="lead">跑满 GPU 计算单元，观察温度、功耗与稳定性。</p>
+
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code>cd gpu-burn-master/
+# 压测 60 秒（参数为压测时长，单位秒）
+./gpu_burn 60</code></pre>
+      </div>
+      <p>配套监控：</p>
+      <div class="code-card">
+        <div class="code-head"><span class="lang">bash</span><button class="copy">复制</button></div>
+        <pre><code># 实时查看 GPU 温度、功耗、利用率（每秒刷新）
+watch -n 1 nvidia-smi</code></pre>
+      </div>
+      <div class="note warn">gpu_burn 会跑满 GPU 计算单元，使温度快速上升；结束测试前请留意温度，避免长时间超温。</div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast">已复制到剪贴板</div>
+
+<script>
+  // ===== 复制功能 =====
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); resolve(); }
+      catch (e) { reject(e); }
+      document.body.removeChild(ta);
+    });
+  }
+
+  var toast = document.getElementById('toast');
+  var toastTimer;
+  function showToast() {
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+  }
+
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.code-card').querySelector('code');
+      copyText(code.textContent).then(function () {
+        var old = btn.textContent;
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        showToast();
+        setTimeout(function () {
+          btn.textContent = old;
+          btn.classList.remove('copied');
+        }, 1600);
+      });
+    });
+  });
+
+  // ===== 轻量语法着色（注释行 + 常见关键字）=====
+  document.querySelectorAll('pre code').forEach(function (code) {
+    var text = code.textContent;
+    var lines = text.split('\n');
+    var html = lines.map(function (line) {
+      var esc = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      if (/^\s*#/.test(line)) {
+        return '<span class="tok-comment">' + esc + '</span>';
+      }
+      return esc.replace(/\b(sudo|cd|git|make|systemctl|service|apt|dnf|yum)\b/g,
+        '<span class="tok-kw">$1</span>');
+    }).join('\n');
+    code.innerHTML = html;
+  });
+
+  // ===== 滚动高亮目录 =====
+  var links = document.querySelectorAll('nav.toc a');
+  var sections = [];
+  links.forEach(function (a) {
+    var sec = document.querySelector(a.getAttribute('href'));
+    if (sec) sections.push({ id: sec.id, el: sec, link: a });
+  });
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var match = sections.find(function (s) { return s.id === entry.target.id; });
+        if (match) match.link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(function (s) { observer.observe(s.el); });
+</script>
+</body>
+</html>

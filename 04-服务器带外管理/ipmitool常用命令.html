@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPMI 管理工具 · ipmitool 常用命令</title>
+<style>
+:root {
+  --bg: #eefaf5; --bg-2: #f6fcf9; --surface: #ffffff;
+  --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+  --accent: #10b981; --accent-dark: #065f46; --accent-soft: #d7f5e6;
+  --border: rgba(0,0,0,.06);
+  --code-bg: #ffffff; --code-text: #000000;
+  --comment: #8a94a0; --keyword: #0f766e;
+  --shadow: 0 4px 24px rgba(0,0,0,.04), 0 16px 48px rgba(0,0,0,.06);
+  --radius: 24px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; display: flex; min-height: 100vh;
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 17px;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 50%, #fff 100%);
+  color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased;
+}
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 300px; height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f0faf4 100%);
+  border-right: 1px solid rgba(4,120,87,.14);
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; z-index: 100;
+}
+.sidebar-brand { padding: 26px 22px 20px; border-bottom: 1px solid rgba(4,120,87,.12); background: rgba(255,255,255,.7); }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 800; color: #065f46; letter-spacing: -.01em; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(16,185,129,.22); }
+.brand-sub { font-size: 13px; color: #4b5563; margin-top: 6px; font-weight: 600; }
+.progress { height: 3px; background: #d7f5e6; margin: 0 22px 14px; border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+.toc-scroll::-webkit-scrollbar { width: 6px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: #c7e6d8; border-radius: 3px; }
+.toc-scroll::-webkit-scrollbar-track { background: transparent; }
+.toc-group { margin-bottom: 16px; }
+.toc-group-title { display: flex; align-items: center; gap: 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #065f46; font-weight: 800; padding: 10px 10px 6px; }
+.toc-group-title::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+.toc-chap { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #1f2937; text-decoration: none; font-size: 14.5px; line-height: 1.45; font-weight: 600; transition: all .15s ease; }
+.toc-chap:hover { background: #eaf7f0; color: #065f46; }
+.toc-chap.active { background: #d7f5e6; color: #04563e; font-weight: 800; box-shadow: inset 3px 0 0 var(--accent); }
+.chap-num { width: 24px; height: 24px; border-radius: 8px; background: #e2f3ea; color: #065f46; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; border: 1px solid rgba(4,120,87,.16); }
+.toc-chap.active .chap-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,210,106,.35); }
+.chap-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toc-sub { display: block; position: relative; padding: 6px 10px 6px 44px; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13.5px; line-height: 1.4; font-weight: 500; transition: all .15s ease; }
+.toc-sub::before { content: ''; position: absolute; left: 30px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: #5ce6ad; }
+.toc-sub:hover { background: #eaf7f0; color: #065f46; }
+.toc-sub.active { background: #d7f5e6; color: #04563e; font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+
+.main { margin-left: 300px; flex: 1; min-width: 0; padding: 50px 60px 120px; }
+.main-inner { max-width: 880px; margin: 0 auto; }
+.page-header { margin-bottom: 40px; }
+.page-header h1 { font-size: 42px; font-weight: 900; letter-spacing: -.04em; margin: 0; color: var(--accent-dark); line-height: 1.1; }
+.page-header .subtitle { color: var(--text-2); font-size: 18px; margin-top: 12px; font-weight: 500; }
+.doc-lead { background: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 24px 30px; box-shadow: 0 4px 24px rgba(0,0,0,.04); color: var(--text-2); font-size: 16px; line-height: 1.75; margin-bottom: 40px; }
+.doc-lead strong { color: var(--accent-dark); }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 40px 46px; box-shadow: var(--shadow); margin-bottom: 34px; transition: transform .25s ease, box-shadow .25s ease; scroll-margin-top: 40px; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06), 0 24px 64px rgba(0,0,0,.08); }
+.card h2 { font-size: 28px; font-weight: 800; margin: 0 0 18px; letter-spacing: -.03em; color: var(--accent-dark); padding-bottom: 14px; border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--accent) 0%, rgba(16,185,129,.22) 70%, transparent 100%) 1; }
+.card h3 { font-size: 21px; font-weight: 700; margin: 26px 0 12px; color: #065f46; display: flex; align-items: center; gap: 10px; }
+.card h3::before { content: ''; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.card h4 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+.card p { margin: 10px 0; color: var(--text-2); font-size: 16px; }
+.card ul, .card ol { margin: 10px 0; padding-left: 24px; color: var(--text-2); font-size: 16px; }
+.card li { margin: 5px 0; }
+.card code:not(.hl) { background: #d7f5e6; color: #065f46; border-radius: 5px; padding: 1px 6px; font-size: 16px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.code-card { border-radius: 12px; overflow: hidden; margin: 14px 0; background: var(--code-bg); border: 1px solid rgba(4,120,87,.14); box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.code-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: #f2faf5; border-bottom: 1px solid rgba(4,120,87,.10); }
+.dots { display: flex; gap: 7px; }
+.dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+.lang { margin-left: 4px; font-size: 13px; color: #065f46; font-weight: 600; letter-spacing: .03em; flex: 1; }
+.copy { background: #ffffff; border: 1px solid rgba(4,120,87,.25); color: #065f46; font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s ease; }
+.copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+.code-card pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+.code-card code { font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; font-size: 15.5px; line-height: 1.7; color: #000000 !important; display: block; }
+.code-card .c { color: #8a94a0 !important; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 12px; border: 1px solid rgba(4,120,87,.12); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: #fff; }
+th { background: #edf9f2; color: #065f46; text-align: left; padding: 10px 14px; font-weight: 700; white-space: nowrap; }
+td { padding: 9px 14px; border-top: 1px solid rgba(4,120,87,.08); color: var(--text-2); }
+td code { background: #d7f5e6; color: #065f46; border-radius: 4px; padding: 0 5px; font-size: 14px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.note { background: #f0faf5; border: 1px solid rgba(4,120,87,.16); border-left: 4px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 14px 0; color: #374151; font-size: 15.5px; line-height: 1.75; }
+.note strong { color: #065f46; }
+.note.warn { background: #fff8ec; border-color: rgba(245,158,11,.3); border-left-color: #f59e0b; color: #78350f; }
+.note.warn strong { color: #b45309; }
+
+.backtop { position: fixed; right: 28px; bottom: 28px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,.45); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 99; }
+  .backtop.show { opacity: 1; pointer-events: auto; }
+  .backtop:hover { transform: translateY(-3px); }
+  #toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px); background: #065f46; color: #fff; padding: 10px 22px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 200; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 30px 20px 80px; }
+  .card { padding: 28px 22px; }
+  .page-header h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand"><span class="brand-dot"></span>IPMI 管理工具</div>
+    <div class="brand-sub">常用工具命令 · ipmitool 详解</div>
+  </div>
+  <div class="progress"><div class="progress-bar"></div></div>
+  <nav class="toc-scroll" id="toc"><div class="toc-group"><div class="toc-group-title">环境与连接</div><a href="#sec-env" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">环境准备与连接方式</span></a><a href="#t1-1" class="toc-sub" data-level="3">安装 ipmitool</a><a href="#t1-2" class="toc-sub" data-level="3">本地接口 / 远程接口</a></div><div class="toc-group"><div class="toc-group-title">状态查看</div><a href="#sec-sensor" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">传感器与硬件状态</span></a><a href="#t2-1" class="toc-sub" data-level="3">电源 / 电源状态</a><a href="#t2-2" class="toc-sub" data-level="3">传感器列表与实时读数</a><a href="#t2-3" class="toc-sub" data-level="3">FRU 与系统信息</a></div><div class="toc-group"><div class="toc-group-title">电源与系统控制</div><a href="#sec-power" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">开机关机与重启</span></a><a href="#t3-1" class="toc-sub" data-level="3">电源控制命令</a><a href="#t3-2" class="toc-sub" data-level="3">开机/引导设备设置</a></div><div class="toc-group"><div class="toc-group-title">远程控制</div><a href="#sec-remote" class="toc-chap"><span class="chap-num">4</span><span class="chap-text">网络与远程运维</span></a><a href="#t4-1" class="toc-sub" data-level="3">远程 SOL 串口</a><a href="#t4-2" class="toc-sub" data-level="3">查看/管理网络设置</a><a href="#t4-3" class="toc-sub" data-level="3">SEL 事件日志</a></div><div class="toc-group"><div class="toc-group-title">用户与安全</div><a href="#sec-user" class="toc-chap"><span class="chap-num">5</span><span class="chap-text">BMC 用户与密码管理</span></a><a href="#t5-1" class="toc-sub" data-level="3">查看现有用户</a><a href="#t5-2" class="toc-sub" data-level="3">新增 / 修改 / 删除用户</a><a href="#t5-3" class="toc-sub" data-level="3">修改用户名 / 密码</a></div><div class="toc-group"><div class="toc-group-title">附录</div><a href="#sec-cheats" class="toc-chap"><span class="chap-num">6</span><span class="chap-text">常用命令速查表</span></a></div></nav>
+</aside>
+<main class="main"><div class="main-inner">
+  <header class="page-header">
+    <h1>IPMI 管理工具</h1>
+    <div class="subtitle">ipmitool 常用命令详解 · 硬件状态 / 电源控制 / 远程运维</div>
+  </header>
+  <div class="doc-lead">本手册面向<b>系统测试工程师</b>，讲解 BMC（基板管理控制器）的标准管理命令行工具 <code>ipmitool</code>：环境准备、传感器/硬件状态查看、开机关机重启、远程串口与网络运维、SEL 事件日志。所有命令带一键复制并逐个解释。本地机器直接使用，远程机器加 <code>-H IP -U 用户 -P 密码</code> 即可。</div>
+
+  <section class="card" id="sec-env"><h2>1. 环境准备与连接方式</h2>
+  <h3 id="t1-1">安装 ipmitool</h3><p>大多数 Linux 发行版软件源里都有 <code>ipmitool</code>，一条命令即可安装。装完后用 <code>ipmitool mc info</code> 验证能否和本机 BMC 通信。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># CentOS / RHEL / Rocky</span>
+sudo yum install ipmitool -y
+
+<span class="c"># Ubuntu / Debian</span>
+sudo apt install ipmitool -y
+
+<span class="c"># 验证是否能读到本机 BMC</span>
+ipmitool mc info</code></pre></div>
+  <div class="note">解释：<code>mc info</code> 读取本机 BMC 的固件/型号/制造商信息。若提示 <code>Error: Unable to open</code> 或没有 <code>/dev/ipmi0</code>，先加载内核模块：<code>sudo modprobe ipmi_si ipmi_devintf</code>（需 root）。</div>
+  <h3 id="t1-2">本地接口 / 远程接口</h3><p>ipmitool 支持两种使用方式：本地直连 BMC 通道（<code>-I open</code>），以及通过管理网口远程连另一台机器的 BMC（<code>-I lanplus</code> + 主机/IP/用户/密码）。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 本地直连（本机 BMC）</span>
+ipmitool -I open power status
+
+<span class="c"># 远程连接（通过管理口连另一台机器 BMC）</span>
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password power status
+
+<span class="c"># 参数简写示例（省去 -I，默认 lanplus 会省略部分下）</span>
+ipmitool -H 192.168.1.100 -U admin -P password sensor list</code></pre></div>
+  <div class="note">解释：<code>-I open</code> 本地内核通道；<code>-I lanplus</code> 远程 RMCP+ 加密通道（推荐）；<code>-H</code> BMC 管理口 IP；<code>-U/-P</code> 用户名/密码。把 <code>192.168.1.100 / admin / password</code> 换成实际值。远程管理口需先配置网络，见第 4 章。</div></section>
+
+  <section class="card" id="sec-sensor"><h2>2. 传感器与硬件状态</h2>
+  <h3 id="t2-1">电源 / 电源状态</h3><p>快速确认机器当前是否通电、开机，以及风扇、电源等关键传感器读数。测试中常先看电源状态再决定下一条命令。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看当前电源状态（on / off）</span>
+ipmitool power status
+
+<span class="c"># 查看电源信息（PSU，输入输出、状态）</span>
+ipmitool sdr type "Power Supply"
+<span class="c"># 或直接列出传感器并筛选电源相关</span>
+ipmitool sensor list | grep -i power</code></pre></div>
+  <div class="note">解释：<code>power status</code> 返回机器通电状态（非 OS 运行状态）；<code>sdr type</code> 按类型过滤传感器数据记录；<code>sensor list</code> 列出所有传感器并可 <code>grep</code> 筛选。电源状态主要用于确认 KVM/IPMI 下机器是否已上电。</div>
+  <h3 id="t2-2">传感器列表与实时读数</h3><p>温度、电压、风扇转速、机箱侵入等传感器是硬件健康排查的第一站。可整表输出，也可按类型/名称定向查找。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 列出全部传感器（名称、读数、状态、阈值）</span>
+ipmitool sensor list
+
+<span class="c"># 只看温度类</span>
+ipmitool sensor list | grep -i temp
+
+<span class="c"># 只看风扇类</span>
+ipmitool sensor list | grep -i fan
+
+<span class="c"># 用 sdr 更紧凑地查看关键健康项</span>
+ipmitool sdr list
+<span class="c"># 直接读指定传感器当前值</span>
+ipmitool sensor get "CPU Temp"</code></pre></div>
+  <div class="note">解释：<code>sensor list</code> 显示所有传感器当前读数与告警状态（<code>ok</code>/<code>nr</code>/<code>cr</code>/<code>lnc inc</code> 等）；<code>sdr list</code> 只汇总当前状态（Compact）；<code>sensor get</code> 查看单个传感器详情含上下阈值。温度过高、风扇转速过低都会在这体现。</div>
+  <h3 id="t2-3">FRU 与系统信息</h3><p>FRU（现场可更换单元）记录硬件序列号、厂商、部件号，用于资产登记与保修排查。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看所有 FRU 信息（主板/机箱/产品序列号等）</span>
+ipmitool fru print
+
+<span class="c"># 查看 BMC 自身信息</span>
+ipmitool mc info
+<span class="c"># 查看本机系统/主机名等（依赖系统实现）</span>
+ipmitool chassis status</code></pre></div>
+  <div class="note">解释：<code>fru print</code> 输出 FRU 设备的序列号与厂商；<code>mc info</code> 看 BMC 固件版本——在排查 BMC 问题时首先要确认的；<code>chassis status</code> 汇总机箱上电、开机按钮、告警状态。</div></section>
+
+  <section class="card" id="sec-power"><h2>3. 开机关机与重启</h2>
+  <h3 id="t3-1">电源控制命令</h3><p>通过 ipmitool 控制机器上电/关机/重启，在执行压测/故障复现、远程整机时非常常用。所有电源命令都属远程高影响操作，务必看清机器身份后再执行。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 开机（ACPI 软开机）</span>
+ipmitool power on
+<span class="c"># 关机（ACPI 软关机）</span>
+ipmitool power off
+<span class="c"># 强制重启（冷重启，类似按 Reset 键）</span>
+ipmitool power reset
+<span class="c"># 软重启（与 reset 类似，立即循环）</span>
+ipmitool power cycle
+<span class="c"># 查看当前状态</span>
+ipmitool power status</code></pre></div>
+  <div class="note.warn"><strong>注意</strong>：<code>power off</code> 是关机，<code>power reset</code> 是冷重启（会先断电再上电），<code>power cycle</code> 也是断电再上电但可能进行 ACPI 软关。执行开关机命令前先 <code>power status</code> 确认当前机器，避免误操作在跑的机器。</div>
+  <h3 id="t3-2">开机引导设备设置</h3><p>测试时经常需要设置下一次开机从 U 盘、光驱或 PXE 引导，便于装系统或进诊断环境。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 设置下一次引导设备（这里用 PXE；一次有效）</span>
+ipmitool chassis bootdev pxe
+
+<span class="c"># 设为从光驱引导</span>
+ipmitool chassis bootdev cdrom
+<span class="c"># 设为正常从硬盘引导</span>
+ipmitool chassis bootdev disk
+<span class="c"># 查看当前引导设备设置</span>
+ipmitool chassis bootparam get 5</code></pre></div>
+  <div class="note">解释：<code>chassis bootdev</code> 设置下一次/持续引导目标（<code>pxe/cdrom/disk/bios</code> 等）；用 <code>bootparam get 5</code> 查看当前设置。多数板卡该设置「下一次开机生效」，装完系统后记得改回 <code>disk</code>，否则可能反复从 PXE 引导。</div></section>
+
+  <section class="card" id="sec-remote"><h2>4. 网络与远程运维</h2>
+  <h3 id="t4-1">远程 SOL 串口</h3><p>SOL（Serial Over LAN）让你在 OS 未起来、甚至 BIOS 阶段也能看到控制台输出，是远程排障的利器。需先在 <code>sol activate</code> 前确认 BIOS/BMC 已启用 SOL。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 激活远程串口控制台（连上后即可看到 BIOS/串口输出）</span>
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password sol activate
+
+<span class="c"># 设置转义字符为 ~（避免与普通按键冲突）后再次进入</span>
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password \
+  -e '&amp;' sol activate
+
+<span class="c"># 退出 SOL：先按 ~ 再按 . 即可断开（Ctrl+］ 为候选转义）</span></code></pre></div>
+  <div class="note">解释：<code>sol activate</code> 建立远程串口会话，看到的是该机串口控制台输出（需 OS/BIOS 串口重定向已开启）。退出会话一般按 <code>Ctrl+］</code> 再输入 <code>~.</code>。<code>-e</code> 指定转义字符避免与普通字符冲突。无输出时先确认 BIOS 的 Serial Console 重定向已配置。</div>
+  <h3 id="t4-2">查看/管理网络设置</h3><p>BMC 管理口的 IP、子网、网关、用户权限等可通过 <code>lan</code> 子命令查看或修改。首次部署或地址冲突时常用。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看通道1的 LAN 配置（IP/掩码/网关/MAC）</span>
+ipmitool lan print 1
+
+<span class="c"># 设置 BMC 静态 IP（示例，值按实际替换）</span>
+ipmitool lan set 1 ipaddr 192.168.1.100
+ipmitool lan set 1 netmask 255.255.255.0
+ipmitool lan set 1 defgw ipaddr 192.168.1.1
+
+<span class="c"># 查看所有通道状态</span>
+ipmitool channel info</code></pre></div>
+  <div class="note.warn"><strong>注意</strong>：修改网口 IP 时若从该口远程连接会<strong>立即断开</strong>；改通道 1 的网络参数前先记录原值。多数服务器默认 DHCP 或固定地址，务必与网管协调。改完可 <code>lan print 1</code> 复查。</div>
+  <h3 id="t4-3">SEL 事件日志</h3><p>SEL（System Event Log）记录开机以来的告警、温度越界、电源异常等事件，是排查整机健康迹的关键依据。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看全部事件日志</span>
+ipmitool sel list
+
+<span class="c"># 只显示发生告警/状态的摘要</span>
+ipmitool sel elist
+
+<span class="c"># 清空事件日志（排查前先备份再看）</span>
+ipmitool sel clear
+
+<span class="c"># 监控新事件（持续输出，Ctrl-C 退出）</span>
+ipmitool sel time get</code></pre></div>
+  <div class="note">解释：<code>sel list</code> 打印所有事件（时间/类型/severity）；<code>sel elist</code> 是紧凑版；<code>sel clear</code> 清空日志（先备份，如 <code>sel list &gt; sel_backup.txt</code>）。常见的电源、温度、风扇事件会在 SEL 留下记录，结合传感器一同判断故障根因。</div></section>
+
+  <section class="card" id="sec-user"><h2>5. BMC 用户与密码管理</h2>
+  <p>通过 ipmitool 可查看、新增、修改、删除 BMC 用户，并重置用户密码——忘记 BMC 登录口令时尤其实用。命令使用 <code>/user</code> 子命令与用户 ID 配合操作（BMC 用户以数字 ID 标识），多数操作需用管理员权限（如默认的 <code>admin</code> 用户）执行。</p>
+  <h3 id="t5-1">查看现有用户</h3><p>先列出所有用户及 ID，拿不准自己 ID 时先查一遍；同时可用 <code>user list</code> 看权限级别与启用状态。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看本机 BMC 的全部用户（ID、用户名、权限、是否启用）</span>
+ipmitool user list
+
+<span class="c"># 远程查看（把 IP/用户/密码换成您的）</span>
+ipmitool -I lanplus -H 192.168.1.100 -U admin -P password user list</code></pre></div>
+  <div class="note">解释：<code>user list</code> 输出每行一个用户，列通常包含 <code>ID</code>、<code>Name</code>、<code>Callin</code>、<code>Link Auth</code>、<code>IPMI Msg</code>、<code>Channel Priv Limit</code>。其中 ID 是后续所有用户操作的关键；权限等级 <code>A</code>=Administrator（管理员）、<code>O</code>=Operator、<code>U</code>=User。</div>
+  <h3 id="t5-2">新增 / 修改 / 删除用户</h3><p>新增用户需先分配一个空 ID（一般从 3 开始预留 admin 固定 ID 2），再设用户名与密码，最后指定权限并启用。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 新建用户：使用 ID 3（2 常为 admin），设用户名 ops</span>
+ipmitool user set name 3 ops
+
+<span class="c"># 为该用户设置初始密码</span>
+ipmitool user set password 3 'Ops@2026!'
+
+<span class="c"># 授予管理员权限（权限 4 = Administrator）</span>
+ipmitool user priv 3 4
+<span class="c"># 或授予普通用户权限（权限 3 = User，2 = Operator）</span>
+# ipmitool user priv 3 3
+
+<span class="c"># 启用该用户（默认可能为禁用）</span>
+ipmitool user enable 3
+
+<span class="c"># 校验：再列出一次确认新增成功</span>
+ipmitool user list</code></pre></div>
+  <div class="note">解释：<code>user set name &lt;ID&gt; &lt;用户名&gt;</code> 设用户名；<code>user set password &lt;ID&gt; '新密码'</code> 设密码；<code>user priv &lt;ID&gt; &lt;权限&gt;</code> 指定权限（1-回调/2-用户/3-操作员/4-管理员，Channel 权限另设）；<code>user enable</code> 启用。删除用户：<code>ipmitool user disable &lt;ID&gt;</code>（BMC 通常只支持禁用，不支持物理删除）。</div>
+  <h3 id="t5-3">修改用户名 / 密码</h3><p>忘记 BMC 密码时，用能登录的 admin 账号直接重设指定用户的密码即可，不必整卡复位；也能顺带改名。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 重置指定用户（这里 ID 2 = admin）的密码</span>
+ipmitool user set password 2 'NewAdmin@2026!'
+
+<span class="c"># 修改用户名（把 ID 2 改为 newadmin；需先知道旧名）</span>
+ipmitool user set name 2 newadmin
+
+<span class="c"># 若忘记所有 BMC 账号：先查看存在的用户 ID</span>
+ipmitool user list
+
+<span class="c"># 部分 BMC 支持通过系统态平台命令直接重置 admin 密码（依厂商而定）</span>
+<span class="c"># ipmitool user set password 2 'NewPass' --overwrite? 参考具体硬件说明</span></code></pre></div>
+  <div class="note.warn"><strong>注意</strong>：
+  <ul>
+  <li><code>user set password &lt;ID&gt;</code> 会<b>覆盖原密码</b>，误操作可能导致其它人无法登录，改前先 <code>user list</code> 确认 ID。</li>
+  <li>忘记 BMC 密码通常<b>无法</b>直接通过 OS 内的 ipmitool 绕过（需带外 BMC 登录或厂商工具/硬件复位）。若你仍有 admin 权限或厂商默认口令则可重置；否则一般需联系厂商通过专用流程恢复。</li>
+  <li>修改密码后，正在使用的远程会话可能失效，请用新口令重新连接测试。</li>
+  </ul></div></section>
+
+  <section class="card" id="sec-cheats"><h2>6. 常用命令速查表</h2>
+  <p>以下为最高频的 12 条命令，可直接复制替换参数使用（把 IP / 用户 / 密码换成实际值，本地机器可去远程参数）。</p>
+  <div class="table-wrap"><table><thead><tr><th>场景</th><th>命令</th></tr></thead><tbody>
+  <tr><td>查看电源状态</td><td><code>ipmitool power status</code></td></tr>
+  <tr><td>开机</td><td><code>ipmitool power on</code></td></tr>
+  <tr><td>关机</td><td><code>ipmitool power off</code></td></tr>
+  <tr><td>强制重启</td><td><code>ipmitool power reset</code></td></tr>
+  <tr><td>查看全部用户</td><td><code>ipmitool user list</code></td></tr>
+  <tr><td>重置用户密码</td><td><code>ipmitool user set password 2 '新密码'</code></td></tr>
+  <tr><td>新增用户</td><td><code>ipmitool user set name 3 ops &amp;&amp; ipmitool user set password 3 '密码' &amp;&amp; ipmitool user priv 3 4 &amp;&amp; ipmitool user enable 3</code></td></tr>
+  <tr><td>设置 PXE 引导</td><td><code>ipmitool chassis bootdev pxe</code></td></tr>
+  <tr><td>查看全部传感器</td><td><code>ipmitool sensor list</code></td></tr>
+  <tr><td>查看健康汇总</td><td><code>ipmitool sdr list</code></td></tr>
+  <tr><td>查看硬件序列号</td><td><code>ipmitool fru print</code></td></tr>
+  <tr><td>查看 BMC 信息</td><td><code>ipmitool mc info</code></td></tr>
+  <tr><td>查看 LAN 设置</td><td><code>ipmitool lan print 1</code></td></tr>
+  <tr><td>查看事件日志</td><td><code>ipmitool sel list</code></td></tr>
+  <tr><td>远程串口会话</td><td><code>ipmitool -I lanplus -H IP -U user -P pass sol activate</code></td></tr>
+  </tbody></table></div>
+  <div class="note"><strong>通用建议</strong>：先在运行机器上 <code>ipmitool mc info</code> 确认通道可用；远程操作前务必 <code>power status</code> / <code>chassis status</code> 确认目标机器。涉及开关机、清 SEL、改网络的操作先用 <code>--help</code> 核对参数。</div></section>
+
+</div></main>
+<button class="backtop" title="回到顶部">↑</button>
+<div id="toast">已复制到剪贴板</div>
+<script>
+var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+var sections = tocLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+
+function onScroll(){
+  var pos = window.scrollY;
+  var cur = -1;
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i] && sections[i].offsetTop - 120 <= pos) cur = i;
+  }
+  tocLinks.forEach(function(a, i){ a.classList.toggle('active', i === cur); });
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var pct = max > 0 ? (pos / max) * 100 : 0;
+  document.querySelector('.progress-bar').style.width = pct + '%';
+  document.querySelector('.backtop').classList.toggle('show', pos > 400);
+}
+
+function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(t);
+  }
+  return new Promise(function(resolve, reject){
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); resolve(); } catch(e){ reject(e); }
+    document.body.removeChild(ta);
+  });
+}
+
+function showToast(){
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 1400);
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var code = btn.closest('.code-card').querySelector('code');
+  var text = code.innerText;
+  copyText(text).then(function(){
+    var old = btn.textContent;
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied'); showToast();
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('copied'); }, 1600);
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+document.querySelector('.backtop').addEventListener('click', function(){
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

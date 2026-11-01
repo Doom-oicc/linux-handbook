@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ipmitool 完全使用手册 · Linux 带外管理详解</title>
+<style>
+:root{
+  --bg:#0b0f14; --bg2:#0e141b; --panel:#101820; --panel2:#131d27;
+  --line:#1e2b38; --line2:#2a3b4d;
+  --txt:#d7e3ee; --dim:#8ba3b8; --dim2:#5f7689;
+  --cyan:#22d3ee; --blue:#38bdf8; --green:#34d399; --red:#f87171;
+  --yellow:#fbbf24; --purple:#a78bfa; --orange:#fb923c; --pink:#f472b6;
+  --code:#0a1017;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--cyan);text-decoration:none}
+/* ---------- 布局 ---------- */
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:var(--bg2);border-right:1px solid var(--line);overflow-y:auto;padding:22px 0 60px;z-index:100}
+#sidebar::-webkit-scrollbar{width:6px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+#sidebar .logo{padding:0 20px 16px;border-bottom:1px solid var(--line);margin-bottom:12px}
+#sidebar .logo h1{font-size:19px;color:var(--cyan);letter-spacing:1px;font-family:Consolas,monospace}
+#sidebar .logo p{font-size:11px;color:var(--dim2);margin-top:4px}
+#sidebar a{display:block;padding:6px 20px;font-size:13px;color:var(--dim);border-left:3px solid transparent;transition:all .15s}
+#sidebar a:hover{color:var(--cyan);background:var(--panel);border-left-color:var(--cyan)}
+#sidebar a .n{display:inline-block;width:30px;color:var(--dim2);font-family:Consolas,monospace;font-size:12px}
+#main{margin-left:260px;max-width:1080px;padding:40px 48px 120px}
+@media(max-width:900px){#sidebar{display:none}#main{margin-left:0;padding:24px 18px}}
+/* ---------- 头部 ---------- */
+.hero{background:linear-gradient(135deg,#0e1b26 0%,#0b0f14 100%);border:1px solid var(--line);border-radius:14px;padding:36px 40px;margin-bottom:40px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;top:-60px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(34,211,238,.12),transparent 70%)}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:.5px}
+.hero h1 .ipmi{color:var(--cyan);font-family:Consolas,monospace}
+.hero .sub{color:var(--dim);margin-top:10px;font-size:14px}
+.hero .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.hero .meta span{font-size:12px;color:var(--dim);border:1px solid var(--line2);border-radius:20px;padding:3px 14px;background:rgba(19,29,39,.7)}
+.hero .meta span b{color:var(--green);font-weight:600}
+/* ---------- 章节 ---------- */
+section{margin-bottom:56px;scroll-margin-top:20px}
+h2{font-size:22px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:2px solid var(--line)}
+h2 .num{font-family:Consolas,monospace;font-size:14px;color:var(--bg);background:var(--cyan);border-radius:8px;padding:2px 10px;font-weight:700}
+h3{font-size:17px;font-weight:600;color:var(--blue);margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+h3::before{content:"";width:4px;height:16px;background:var(--blue);border-radius:2px}
+h4{font-size:15px;font-weight:600;color:var(--purple);margin:18px 0 8px}
+p{margin:10px 0;color:var(--txt)}
+strong{color:#fff}
+/* ---------- 卡片 / 提示 ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin:16px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+.tip{border-left:4px solid var(--cyan);background:rgba(34,211,238,.06);border-radius:0 10px 10px 0;padding:12px 18px;margin:14px 0;font-size:14px}
+.warn{border-left:4px solid var(--yellow);background:rgba(251,191,36,.06);border-radius:0 10px 10px 0;padding:12px 18px;margin:14px 0;font-size:14px}
+.danger{border-left:4px solid var(--red);background:rgba(248,113,113,.06);border-radius:0 10px 10px 0;padding:12px 18px;margin:14px 0;font-size:14px}
+.exp{border-left:4px solid var(--green);background:rgba(52,211,153,.07);border-radius:0 10px 10px 0;padding:12px 18px;margin:14px 0;font-size:14px}
+.exp b{color:var(--green)}
+.tip b{color:var(--cyan)} .warn b{color:var(--yellow)} .danger b{color:var(--red)}
+/* ---------- 代码 ---------- */
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:16px 20px;overflow-x:auto;font-family:Consolas,"Cascadia Mono",monospace;font-size:13px;line-height:1.7;margin:12px 0;color:#c9dbe8}
+code{font-family:Consolas,"Cascadia Mono",monospace;font-size:13px}
+p code,li code,td code{background:#16222e;color:var(--cyan);padding:1px 7px;border-radius:5px;border:1px solid var(--line)}
+.cm{color:var(--dim2)}        /* 注释 */
+.ck{color:var(--cyan)}        /* 命令关键字 */
+.ca{color:var(--yellow)}      /* 参数 */
+.co{color:#c9dbe8}            /* 输出 */
+.cg{color:var(--green)}       /* 正常/ok */
+.cr{color:var(--red)}         /* 错误/危险 */
+.cy{color:var(--yellow)}      /* 警告 */
+.cb{color:var(--blue)}        /* 字段名 */
+.cp{color:var(--purple)}      /* 值 */
+.hl{background:rgba(251,191,36,.16);color:var(--yellow);border-radius:3px;padding:0 3px}
+/* ---------- 表格 ---------- */
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+th{background:var(--panel2);color:var(--cyan);text-align:left;padding:10px 14px;font-weight:600;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--line);color:var(--txt);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(34,211,238,.03)}
+td.mono{font-family:Consolas,monospace;color:var(--yellow);white-space:nowrap}
+/* ---------- 状态标记 ---------- */
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 9px;border-radius:12px;font-family:Consolas,monospace;vertical-align:middle}
+.tag.ok{color:var(--green);border:1px solid var(--green)}
+.tag.err{color:var(--red);border:1px solid var(--red)}
+.tag.warn{color:var(--yellow);border:1px solid var(--yellow)}
+.tag.info{color:var(--blue);border:1px solid var(--blue)}
+.tag.p{color:var(--purple);border:1px solid var(--purple)}
+.ok{color:var(--green);font-weight:700}.err{color:var(--red);font-weight:700}.wn{color:var(--yellow);font-weight:700}
+/* ---------- 列表 ---------- */
+ul,ol{margin:10px 0 10px 22px}
+li{margin:5px 0}
+.arrow li{list-style:none;position:relative;padding-left:20px}
+.arrow li::before{content:"→";position:absolute;left:0;color:var(--cyan);font-weight:700}
+/* ---------- SVG 图 ---------- */
+.figure{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 16px;margin:16px 0;text-align:center;overflow-x:auto}
+.figure .cap{font-size:12.5px;color:var(--dim);margin-top:12px}
+/* ---------- 页脚 ---------- */
+footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);color:var(--dim2);font-size:12.5px;text-align:center}
+/* 锚点偏移 */
+:target{scroll-margin-top:20px}
+</style>
+</head>
+<body>
+
+<!-- ==================== 侧边导航 ==================== -->
+<nav id="sidebar">
+  <div class="logo">
+    <h1>ipmitool</h1>
+    <p>Linux 带外管理完全手册</p>
+  </div>
+  <a href="#s00"><span class="n">00</span>三大件概念总览</a>
+  <a href="#s01"><span class="n">01</span>IPMI 架构与核心名词</a>
+  <a href="#s02"><span class="n">02</span>安装与内核准备</a>
+  <a href="#s03"><span class="n">03</span>连接方式与全局选项</a>
+  <a href="#s04"><span class="n">04</span>电源与机箱控制</a>
+  <a href="#s05"><span class="n">05</span>传感器监控 sensor / sdr</a>
+  <a href="#s06"><span class="n">06</span>FRU 硬件清单</a>
+  <a href="#s07"><span class="n">07</span>SEL 系统事件日志</a>
+  <a href="#s08"><span class="n">08</span>用户与权限管理</a>
+  <a href="#s09"><span class="n">09</span>BMC 网络配置 lan</a>
+  <a href="#s10"><span class="n">10</span>SOL 串口重定向</a>
+  <a href="#s11"><span class="n">11</span>PEF 平台事件过滤</a>
+  <a href="#s12"><span class="n">12</span>BMC 自管理与看门狗</a>
+  <a href="#s13"><span class="n">13</span>raw 原始命令</a>
+  <a href="#s14"><span class="n">14</span>DCMI 功耗管理</a>
+  <a href="#s15"><span class="n">15</span>固件升级 hpm / fwum</a>
+  <a href="#s16"><span class="n">16</span>OEM 厂商扩展命令</a>
+  <a href="#s17"><span class="n">17</span>其余子命令速览</a>
+  <a href="#s18"><span class="n">18</span>全局选项速查</a>
+  <a href="#s19"><span class="n">19</span>实战脚本集</a>
+  <a href="#s20"><span class="n">20</span>故障排查与踩坑</a>
+  <a href="#s21"><span class="n">21</span>安全加固建议</a>
+  <a href="#s22"><span class="n">22</span>一页速查表</a>
+</nav>
+
+<main id="main">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <h1><span class="ipmi">ipmitool</span> 完全使用手册</h1>
+  <p class="sub">Linux 下 IPMI / BMC 带外管理 · 从入门到批量运维 · 覆盖全部子命令、raw 指令、SOL、固件升级与实战排错</p>
+  <div class="meta">
+    <span>适用系统 <b>RHEL / Rocky / Debian / Ubuntu / SUSE</b></span>
+    <span>协议版本 <b>IPMI 1.5 / 2.0</b></span>
+    <span>BMC 平台 <b>ASPEED / Supermicro / Dell iDRAC / HPE iLO / 浪潮 / 华为</b></span>
+    <span>文档日期 <b>2026-10-26</b></span>
+  </div>
+</div>
+
+<!-- ==================== 00 概念总览 ==================== -->
+<section id="s00">
+  <h2><span class="num">00</span>三大件概念总览：IPMI · BMC · ipmitool</h2>
+  <div class="grid3">
+    <div class="card">
+      <h4 style="color:var(--cyan)">IPMI（协议）</h4>
+      <p style="font-size:13.5px"><strong>Intelligent Platform Management Interface</strong>，智能平台管理接口。它是 Intel 牵头制定的一套<b>硬件管理协议标准</b>，定义了管理控制器与系统硬件之间交换信息的报文格式、命令集与事件机制。当前主流版本为 <span class="tag info">IPMI 2.0</span>（2004 年发布，引入 RMCP+ 加密、SOL、VLAN）。</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--green)">BMC（硬件）</h4>
+      <p style="font-size:13.5px"><strong>Baseboard Management Controller</strong>，基板管理控制器。它是主板上的一颗<b>独立芯片</b>（常见 ASPEED AST2500/AST2600、Nuvoton），拥有独立 CPU、内存、网络栈与固件。<b>主机关机甚至 CPU 损坏时，BMC 依然工作</b>——这就是"带外管理"的物理基础。</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--yellow)">ipmitool（工具）</h4>
+      <p style="font-size:13.5px">Linux 下最通用的 IPMI 命令行客户端。它既可以通过内核驱动（<code>/dev/ipmi0</code>）与<b>本机</b> BMC 通信，也可以通过 LAN 走 <b>RMCP/RMCP+ 协议（UDP 623 端口）</b>管理<b>远程</b>服务器。同类工具还有 freeipmi、OpenIPMI，但 ipmitool 生态最广。</p>
+    </div>
+  </div>
+  <div class="tip"><b>带内 vs 带外：</b>SSH/远程桌面依赖操作系统运行，属于"带内"；IPMI 直连 BMC 芯片，操作系统崩溃、蓝屏、断电状态下仍可开关机、看传感器、读日志，属于"带外"。KVM over IP（远程画面）虽然也由 BMC 提供，但它<b>不是</b> IPMI 协议的一部分，而是各厂商的私有实现。</div>
+</section>
+
+<!-- ==================== 01 架构与名词 ==================== -->
+<section id="s01">
+  <h2><span class="num">01</span>IPMI 架构与核心名词</h2>
+
+  <h3>1.1 系统架构图</h3>
+  <div class="figure">
+<svg width="980" height="470" viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,monospace">
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#22d3ee"/></marker>
+    <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker>
+  </defs>
+  <!-- 管理员 -->
+  <rect x="30" y="30" width="210" height="90" rx="10" fill="#131d27" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="135" y="60" fill="#22d3ee" font-size="14" text-anchor="middle" font-weight="bold">管理员工作站</text>
+  <text x="135" y="84" fill="#8ba3b8" font-size="12" text-anchor="middle">ipmitool -I lanplus</text>
+  <text x="135" y="104" fill="#8ba3b8" font-size="12" text-anchor="middle">Web / Redfish / ipmi_exporter</text>
+  <!-- 网络 -->
+  <rect x="300" y="48" width="150" height="54" rx="8" fill="#0e1b26" stroke="#2a3b4d"/>
+  <text x="375" y="70" fill="#fbbf24" font-size="12" text-anchor="middle">管理网络</text>
+  <text x="375" y="90" fill="#8ba3b8" font-size="11" text-anchor="middle">UDP 623 (RMCP+)</text>
+  <line x1="240" y1="75" x2="296" y2="75" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#ar)"/>
+  <!-- 服务器外框 -->
+  <rect x="470" y="15" width="480" height="440" rx="14" fill="none" stroke="#1e2b38" stroke-dasharray="6 4"/>
+  <text x="710" y="40" fill="#5f7689" font-size="13" text-anchor="middle">服务器主板</text>
+  <!-- BMC -->
+  <rect x="520" y="55" width="180" height="100" rx="10" fill="#101820" stroke="#34d399" stroke-width="2"/>
+  <text x="610" y="82" fill="#34d399" font-size="15" text-anchor="middle" font-weight="bold">BMC 芯片</text>
+  <text x="610" y="104" fill="#8ba3b8" font-size="11.5" text-anchor="middle">ASPEED AST2600</text>
+  <text x="610" y="122" fill="#8ba3b8" font-size="11.5" text-anchor="middle">独立 ARM 核 · 独立固件</text>
+  <text x="610" y="140" fill="#8ba3b8" font-size="11.5" text-anchor="middle">独立于主机 OS 运行</text>
+  <line x1="450" y1="75" x2="516" y2="90" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#ar)"/>
+  <!-- 网络接口 -->
+  <rect x="770" y="55" width="150" height="95" rx="10" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="845" y="78" fill="#38bdf8" font-size="12.5" text-anchor="middle" font-weight="bold">网络出口</text>
+  <text x="845" y="98" fill="#8ba3b8" font-size="11" text-anchor="middle">Dedicated 专用口</text>
+  <text x="845" y="115" fill="#8ba3b8" font-size="11" text-anchor="middle">NC-SI 共享口</text>
+  <text x="845" y="132" fill="#8ba3b8" font-size="11" text-anchor="middle">Failover 切换</text>
+  <line x1="700" y1="105" x2="766" y2="105" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#ar)"/>
+  <!-- 传感器/风扇 -->
+  <rect x="490" y="200" width="130" height="66" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="555" y="226" fill="#fbbf24" font-size="12" text-anchor="middle">温度/电压/电流传感器</text>
+  <text x="555" y="246" fill="#8ba3b8" font-size="11" text-anchor="middle">SDR 数据源</text>
+  <!-- 风扇 -->
+  <rect x="640" y="200" width="110" height="66" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="695" y="226" fill="#fbbf24" font-size="12" text-anchor="middle">风扇 PWM/转速</text>
+  <text x="695" y="246" fill="#8ba3b8" font-size="11" text-anchor="middle">Fan Control</text>
+  <!-- PSU -->
+  <rect x="770" y="200" width="130" height="66" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="835" y="226" fill="#fbbf24" font-size="12" text-anchor="middle">PSU 电源模块</text>
+  <text x="835" y="246" fill="#8ba3b8" font-size="11" font-size="11" text-anchor="middle">PMBus · 功率/冗余</text>
+  <!-- FRU EEPROM -->
+  <rect x="490" y="290" width="130" height="60" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="555" y="314" fill="#a78bfa" font-size="12" text-anchor="middle">FRU EEPROM</text>
+  <text x="555" y="333" fill="#8ba3b8" font-size="11" text-anchor="middle">序列号/资产信息</text>
+  <!-- SEL Flash -->
+  <rect x="640" y="290" width="110" height="60" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="695" y="314" fill="#a78bfa" font-size="12" text-anchor="middle">SEL 存储区</text>
+  <text x="695" y="333" fill="#8ba3b8" font-size="11" text-anchor="middle">事件日志 Flash</text>
+  <!-- Watchdog -->
+  <rect x="770" y="290" width="130" height="60" rx="8" fill="#131d27" stroke="#2a3b4d"/>
+  <text x="835" y="314" fill="#a78bfa" font-size="12" text-anchor="middle">Watchdog 看门狗</text>
+  <text x="835" y="333" fill="#8ba3b8" font-size="11" text-anchor="middle">OS 挂死自动复位</text>
+  <!-- 主机侧 -->
+  <rect x="490" y="380" width="410" height="60" rx="10" fill="#0e1b26" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="695" y="404" fill="#fb923c" font-size="13" text-anchor="middle" font-weight="bold">主机侧：CPU / PCH / BIOS / OS</text>
+  <text x="695" y="424" fill="#8ba3b8" font-size="11" text-anchor="middle">KCS / BT / SSIF 接口 ⇔ 内核 ipmi_si 驱动 ⇔ /dev/ipmi0</text>
+  <!-- 连线 -->
+  <line x1="580" y1="155" x2="560" y2="196" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="640" y1="155" x2="688" y2="196" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="690" y1="155" x2="828" y2="196" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="560" y1="266" x2="558" y2="286" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="695" y1="266" x2="695" y2="286" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="835" y1="266" x2="835" y2="286" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#ar2)"/>
+  <line x1="610" y1="350" x2="620" y2="376" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="655" y1="155" x2="700" y2="376" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <!-- 图例 -->
+  <rect x="30" y="150" width="210" height="120" rx="10" fill="#0e141b" stroke="#1e2b38"/>
+  <text x="45" y="175" fill="#8ba3b8" font-size="12" font-weight="bold">图例</text>
+  <line x1="45" y1="195" x2="80" y2="195" stroke="#22d3ee" stroke-width="2"/><text x="90" y="199" fill="#8ba3b8" font-size="11">RMCP+ 网络通道</text>
+  <line x1="45" y1="218" x2="80" y2="218" stroke="#a78bfa" stroke-width="2"/><text x="90" y="222" fill="#8ba3b8" font-size="11">板级内部总线 I²C/PMBus</text>
+  <line x1="45" y1="241" x2="80" y2="241" stroke="#fb923c" stroke-width="2"/><text x="90" y="245" fill="#8ba3b8" font-size="11">KCS/BT 主机本地接口</text>
+</svg>
+    <div class="cap">图 1 · IPMI/BMC 体系结构：BMC 通过板级总线采集硬件信息，对外提供 RMCP+ 网络接口，对内通过 KCS/BT 与主机 OS 通信</div>
+  </div>
+
+  <h3>1.2 核心名词速查</h3>
+  <table>
+    <tr><th style="width:110px">名词</th><th style="width:260px">全称</th><th>说明</th></tr>
+    <tr><td class="mono">BMC</td><td>Baseboard Management Controller</td><td>基板管理控制器，IPMI 体系的核心芯片，独立于主机运行</td></tr>
+    <tr><td class="mono">IPMB</td><td>Intelligent Platform Management Bus</td><td>基于 I²C 的板级管理总线，连接 BMC 与各卫星控制器</td></tr>
+    <tr><td class="mono">KCS / BT / SSIF</td><td>—</td><td>BMC 与主机 CPU 之间的本地通信接口；Linux 下由 <code>ipmi_si</code> 驱动提供 <code>/dev/ipmi0</code></td></tr>
+    <tr><td class="mono">RMCP / RMCP+</td><td>Remote Management Control Protocol</td><td>IPMI 网络协议，走 <span class="tag warn">UDP 623</span>；RMCP+ 是 IPMI 2.0 的加密增强版（对应 lanplus 接口）</td></tr>
+    <tr><td class="mono">NC-SI</td><td>Network Controller Sideband Interface</td><td>BMC 复用主机网卡对外通信的技术，即"共享网口"模式</td></tr>
+    <tr><td class="mono">SDR</td><td>Sensor Data Record</td><td>传感器数据记录：BMC 里每个传感器的静态描述（类型、阈值、单位、换算公式）</td></tr>
+    <tr><td class="mono">FRU</td><td>Field Replaceable Unit</td><td>现场可更换单元的 EEPROM 信息：厂商、型号、序列号、生产日期</td></tr>
+    <tr><td class="mono">SEL</td><td>System Event Log</td><td>系统事件日志，BMC 持久化存储的硬件事件（过温、掉电、风扇失效…）</td></tr>
+    <tr><td class="mono">PEF</td><td>Platform Event Filtering</td><td>平台事件过滤：定义"某类事件发生时执行什么动作"（告警/断电/复位）</td></tr>
+    <tr><td class="mono">PET</td><td>Platform Event Trap</td><td>平台事件陷阱，事件触发时向管理站发送 SNMP Trap</td></tr>
+    <tr><td class="mono">SOL</td><td>Serial Over LAN</td><td>串口重定向：把主板串口（BIOS/内核 Console）透传到网络</td></tr>
+    <tr><td class="mono">DCMI</td><td>Data Center Manageability Interface</td><td>面向数据中心的精简子集，主打功耗读取与功耗封顶</td></tr>
+    <tr><td class="mono">HPM</td><td>PICMG HPM.1</td><td>标准化的固件在线升级协议</td></tr>
+    <tr><td class="mono">ME / PSFP / CPLD</td><td>—</td><td>Intel ME、固件安全等周边部件，部分厂商允许经 IPMI 升级</td></tr>
+    <tr><td class="mono">Channel</td><td>—</td><td>通道：BMC 上每类通信介质的编号（Channel 1 通常是第一个 LAN 口，0 是 IPMB）</td></tr>
+    <tr><td class="mono">NetFn / Cmd</td><td>Network Function / Command</td><td>IPMI 报文的二级寻址：功能域 + 命令号，raw 命令的基础</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 02 安装 ==================== -->
+<section id="s02">
+  <h2><span class="num">02</span>安装与内核准备</h2>
+
+  <h3>2.1 各发行版安装</h3>
+<pre><span class="cm"># RHEL / CentOS / Rocky / Alma</span>
+<span class="ck">yum install -y ipmitool</span>          <span class="cm"># 或 dnf install -y ipmitool</span>
+
+<span class="cm"># Debian / Ubuntu</span>
+<span class="ck">apt-get update && apt-get install -y ipmitool</span>
+
+<span class="cm"># openSUSE / SLES</span>
+<span class="ck">zypper install -y ipmitool</span>
+
+<span class="cm"># 源码编译（需要最新版本或交叉编译时）</span>
+<span class="ck">tar xzf ipmitool-1.8.19.tar.gz && cd ipmitool-1.8.19</span>
+<span class="ck">./configure && make -j$(nproc) && make install</span></pre>
+
+  <h3>2.2 本地使用必须加载内核模块</h3>
+  <p>本地接口（<code>-I open</code>，默认）依赖 OpenIPMI 内核驱动，设备节点为 <code>/dev/ipmi0</code>：</p>
+<pre><span class="cm"># 临时加载</span>
+<span class="ck">modprobe ipmi_devintf</span>
+<span class="ck">modprobe ipmi_si</span>           <span class="cm"># KCS/BT 接口驱动，绝大多数机器需要</span>
+
+<span class="cm"># 开机自动加载</span>
+<span class="ck">echo -e "ipmi_devintf\nipmi_si" > /etc/modules-load.d/ipmi.conf</span>
+
+<span class="cm"># 验证</span>
+<span class="ck">ls -l /dev/ipmi*</span>
+<span class="co">crw------- 1 root root 247, 0 Oct 26 10:00 /dev/ipmi0</span>
+
+<span class="cm"># 自检：能读到 BMC 信息即正常</span>
+<span class="ck">ipmitool bmc info</span></pre>
+
+  <div class="warn"><b>常见报错：</b><code>Could not open device at /dev/ipmi0</code> → 依次检查 <span class="wn">→</span> 模块未加载（modprobe 补齐）<span class="wn">→</span> BIOS 中 IPMI/BMC 被禁用 <span class="wn">→</span> 虚拟机无 BMC（VM 里只有 -I lan 远程模式可用）。</div>
+
+  <div class="tip"><b>仅做远程管理时无需任何内核模块：</b><code>ipmitool -I lanplus -H ...</code> 走的是网络协议栈，普通 x86 工控机、笔记本、容器内都可以作为管理端。</div>
+</section>
+
+<!-- ==================== 03 连接方式 ==================== -->
+<section id="s03">
+  <h2><span class="num">03</span>连接方式与全局选项</h2>
+
+  <h3>3.1 四种接口（-I 参数）</h3>
+  <table>
+    <tr><th>接口</th><th>用途</th><th>前提</th><th>典型用法</th></tr>
+    <tr><td class="mono">open（默认）</td><td>管理<b>本机</b> BMC</td><td>内核驱动 + /dev/ipmi0</td><td class="mono">ipmitool power status</td></tr>
+    <tr><td class="mono">lan</td><td>远程，IPMI 1.5 RMCP</td><td>网络可达 UDP 623</td><td class="mono">ipmitool -I lan -H ... （明文，不推荐）</td></tr>
+    <tr><td class="mono">lanplus</td><td>远程，IPMI 2.0 RMCP+</td><td>同上，<b>推荐</b></td><td class="mono">ipmitool -I lanplus -H ... -U ... -P ...</td></tr>
+    <tr><td class="mono">free</td><td>与 freeipmi 兼容模式</td><td>—</td><td class="mono">极少使用</td></tr>
+  </table>
+
+  <h3>3.2 本地与远程对照</h3>
+<pre><span class="cm"># —— 本地：什么都不用带 ——</span>
+<span class="ck">ipmitool power status</span>
+
+<span class="cm"># —— 远程：接口 + 主机 + 用户名 + 密码 ——</span>
+<span class="ck">ipmitool -I lanplus</span> <span class="ca">-H 192.168.10.68 -U admin -P 'Admin@123'</span> power status
+
+<span class="cm"># 非默认端口 / 指定加密套件 / 指定权限级别</span>
+<span class="ck">ipmitool -I lanplus</span> <span class="ca">-H 192.168.10.68 -p 623 -C 3 -L ADMINISTRATOR -U admin -P 'xxx'</span> sdr
+
+<span class="cm"># 交互式输入密码（不写进 shell 历史）</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin</span> <span class="ca">-a</span> power status
+
+<span class="cm"># 从环境变量读密码（IPMITOOL_PASSWORD 优先于 IPMI_PASSWORD）</span>
+<span class="ck">export IPMITOOL_PASSWORD='Admin@123'</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin</span> <span class="ca">-E</span> power status
+
+<span class="cm"># 从密码文件读（文件第一行，权限务必 600）</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin</span> <span class="ca">-f /root/.ipmi-pass</span> power status</pre>
+
+  <div class="danger"><b>安全红线：</b>避免在命令行直接写 <code>-P 密码</code>，它会进入 shell 历史与进程列表（<code>ps</code> 可见）。批量脚本中优先用 <code>-f 文件</code>（chmod 600）或 <code>-E 环境变量</code>。</div>
+
+  <h3>3.3 连接参数组合决策</h3>
+  <table>
+    <tr><th>场景</th><th>推荐组合</th></tr>
+    <tr><td>本机巡检/装系统前配置</td><td class="mono">ipmitool &lt;cmd&gt;（裸用，root 执行）</td></tr>
+    <tr><td>同机房批量管理</td><td class="mono">-I lanplus -C 3 -f passfile</td></tr>
+    <tr><td>跨网段/安全性要求高</td><td class="mono">-I lanplus -C 17（HMAC-SHA256 + AES-CBC-128）</td></tr>
+    <tr><td>老设备只支持 IPMI 1.5</td><td class="mono">-I lan -A PASSWORD</td></tr>
+    <tr><td>SOL 串口重定向</td><td class="mono">必须 -I lanplus</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 04 电源与机箱 ==================== -->
+<section id="s04">
+  <h2><span class="num">04</span>电源与机箱控制（power / chassis）</h2>
+
+  <h3>4.1 电源操作六兄弟</h3>
+<pre><span class="ck">ipmitool power status</span>     <span class="cm"># 查询电源状态</span>
+<span class="ck">ipmitool power on</span>         <span class="cm"># 开机</span>
+<span class="ck">ipmitool power off</span>        <span class="cm"># 强制断电（≈ 长按电源键 4 秒，OS 无机会善后）</span>
+<span class="ck">ipmitool power cycle</span>      <span class="cm"># 断电后约 1 秒再上电（冷重启）</span>
+<span class="ck">ipmitool power reset</span>      <span class="cm"># 硬复位（不断电，≈ 机箱 Reset 键）</span>
+<span class="ck">ipmitool power soft</span>       <span class="cm"># ACPI 软关机（≈ 轻按电源键，OS 正常走关机流程）</span>
+<span class="ck">ipmitool power diag</span>       <span class="cm"># 向 CPU 发 NMI 诊断中断（触发 kdump/蓝屏抓 dump 用）</span></pre>
+  <p><code>chassis power xxx</code> 与 <code>power xxx</code> 完全等价，例如 <code>ipmitool chassis power cycle</code>。</p>
+
+  <div class="warn"><b>off / cycle / reset 的选择：</b>排查网卡固件、BMC 异常类问题时，需要<b>整机交流断电 60 秒以上</b>让 Vaux 待机电源彻底释放（拔电源线或 PDU 断口），<code>power off</code> 只是逻辑关机，PCIe 待机供电仍在，<b>不等于</b>冷断电。</div>
+
+  <h3>4.2 机箱状态总览</h3>
+<pre><span class="ck">ipmitool chassis status</span>
+<span class="cb">System Power</span>         : <span class="cg">on</span>                  <span class="cm">← 当前电源状态</span>
+<span class="cb">Power Overload</span>       : <span class="co">false</span>               <span class="cm">← 电源过载标志</span>
+<span class="cb">Power Interlock</span>      : <span class="co">inactive</span>            <span class="cm">← 机箱开盖互锁</span>
+<span class="cb">Main Power Fault</span>     : <span class="co">false</span>
+<span class="cb">Power Control Fault</span>  : <span class="co">false</span>
+<span class="cb">Power Restore Policy</span> : <span class="cp">previous</span>            <span class="cm">← 断电恢复策略 ★</span>
+<span class="cb">Last Power Event</span>     : <span class="cp">command</span>             <span class="cm">← 上次断电原因（command/ac-failed…）</span>
+<span class="cb">Chassis Intrusion</span>    : <span class="co">inactive</span>            <span class="cm">← 机箱入侵检测</span>
+<span class="cb">Front-Panel Lockout</span>  : <span class="co">inactive</span>
+<span class="cb">Drive Fault</span>          : <span class="co">false</span>
+<span class="cb">Cooling/Fan Fault</span>    : <span class="co">false</span>
+<span class="cb">Front Panel Control</span>  : <span class="co">none</span></pre>
+
+  <h3>4.3 断电恢复策略（机房必配）</h3>
+<pre><span class="ck">ipmitool chassis policy always-on</span>    <span class="cm"># 市电恢复 → 自动开机（计算节点推荐）</span>
+<span class="ck">ipmitool chassis policy previous</span>     <span class="cm"># 恢复断电前状态（默认，最稳妥）</span>
+<span class="ck">ipmitool chassis policy always-off</span>   <span class="cm"># 保持关机（存储/特殊场景）</span>
+<span class="ck">ipmitool chassis policy list</span>         <span class="cm"># 查看支持哪些策略</span></pre>
+
+  <h3>4.4 下次启动设备 bootdev（远程装系统的核心）</h3>
+<pre><span class="ck">ipmitool chassis bootdev pxe</span>                          <span class="cm"># 下次从 PXE 网络启动 ★最常用</span>
+<span class="ck">ipmitool chassis bootdev disk</span>                         <span class="cm"># 下次从硬盘启动</span>
+<span class="ck">ipmitool chassis bootdev cdrom</span>                        <span class="cm"># 下次从光驱/虚拟介质启动</span>
+<span class="ck">ipmitool chassis bootdev bios</span>                         <span class="cm"># 下次开机直接进 BIOS Setup</span>
+<span class="ck">ipmitool chassis bootdev floppy</span>                       <span class="cm"># 下次从可移动介质</span>
+<span class="ck">ipmitool chassis bootdev none</span>                         <span class="cm"># 清除设定</span>
+
+<span class="cm"># 修饰选项 options=（可逗号叠加）</span>
+<span class="ck">ipmitool chassis bootdev pxe options=persistent</span>       <span class="cm"># persistent：永久生效而非仅下次</span>
+<span class="ck">ipmitool chassis bootdev pxe options=efiboot</span>          <span class="cm"># efiboot：强制 EFI 方式</span>
+<span class="ck">ipmitool chassis bootdev bios options=verbose</span>         <span class="cm"># 组合示例</span>
+
+<span class="cm"># 查看当前启动参数</span>
+<span class="ck">ipmitool chassis bootparam get 5</span></pre>
+
+  <div class="tip"><b>无人值守重装系统的标准三连：</b><code>bootdev pxe</code> → <code>power cycle</code> → <code>sol activate</code> 盯着装机进度。装完如要还原默认磁盘启动，再 <code>bootdev none</code>（一次性设置通常自动失效）。</div>
+
+  <h3>4.5 定位灯与其他机箱命令</h3>
+<pre><span class="ck">ipmitool chassis identify 15</span>       <span class="cm"># 定位灯（UID灯）闪烁 15 秒，机柜找机器必备</span>
+<span class="ck">ipmitool chassis identify force</span>    <span class="cm"># 一直闪，直到手动关闭</span>
+<span class="ck">ipmitool chassis identify 0</span>        <span class="cm"># 立即关闭</span>
+<span class="ck">ipmitool chassis restart_cause</span>     <span class="cm"># 上次重启原因（panic/watchdog/power-button…）</span>
+<span class="ck">ipmitool chassis poh</span>               <span class="cm"># 累计通电时长 (Power-On Hours)</span>
+<span class="ck">ipmitool chassis selftest</span>          <span class="cm"># 机箱自检</span>
+<span class="ck">ipmitool chassis bootparam get 0</span>   <span class="cm"># 查看引导参数表（0~7）</span></pre>
+</section>
+
+<!-- ==================== 05 传感器 ==================== -->
+<section id="s05">
+  <h2><span class="num">05</span>传感器监控（sensor / sdr）</h2>
+
+  <h3>5.1 sdr 与 sensor 的区别</h3>
+  <table>
+    <tr><th>命令</th><th>数据来源</th><th>特点</th></tr>
+    <tr><td class="mono">ipmitool sdr</td><td>SDR Repository（传感器描述仓库）+ 实时读数</td><td>信息最全，可按类型过滤，可导出缓存</td></tr>
+    <tr><td class="mono">ipmitool sensor</td><td>同上</td><td>输出更简洁，支持阈值设置，巡检最常用</td></tr>
+  </table>
+
+  <h3>5.2 日常巡检用法</h3>
+<pre><span class="ck">ipmitool sdr</span>                        <span class="cm"># 列出全部传感器（名称 | 读数 | 状态）</span>
+<span class="ck">ipmitool sdr elist</span>                  <span class="cm"># 扩展格式：含传感器实体 ID 与类型</span>
+<span class="ck">ipmitool sdr elist full</span>             <span class="cm"># 只看 full 类型记录</span>
+<span class="ck">ipmitool sdr type Temperature</span>       <span class="cm"># 只看温度</span>
+<span class="ck">ipmitool sdr type Fan</span>               <span class="cm"># 只看风扇转速</span>
+<span class="ck">ipmitool sdr type Voltage</span>           <span class="cm"># 只看电压</span>
+<span class="ck">ipmitool sdr type "Power Supply"</span>    <span class="cm"># 只看电源模块</span>
+<span class="ck">ipmitool sdr type list</span>              <span class="cm"># 列出本机全部传感器类型</span>
+
+<span class="ck">ipmitool sensor</span>                     <span class="cm"># 同 sdr list，输出含上下限阈值列</span>
+<span class="ck">ipmitool sensor get "CPU1 Temp"</span>     <span class="cm"># 单个传感器详情（含全部阈值与当前断言）</span></pre>
+
+  <h3>5.3 输出解读</h3>
+<pre><span class="ck">ipmitool sdr</span>
+<span class="cb">CPU1 Temp</span>        | <span class="cp">32 degrees C</span>      | <span class="cg">ok</span>        <span class="cm">← 正常</span>
+<span class="cb">CPU2 Temp</span>        | <span class="co">no reading</span>        | <span class="cy">ns</span>        <span class="cm">← 单路机器无此传感器，ns=未指定</span>
+<span class="cb">System Temp</span>      | <span class="cp">28 degrees C</span>      | <span class="cg">ok</span>
+<span class="cb">FAN1</span>             | <span class="cp">4000 RPM</span>          | <span class="cg">ok</span>
+<span class="cb">FAN4</span>             | <span class="co">no reading</span>        | <span class="cy">ns</span>        <span class="cm">← 风扇未安装</span>
+<span class="cb">12V</span>              | <span class="cp">12.10 Volts</span>       | <span class="cg">ok</span>
+<span class="cb">VBAT</span>             | <span class="cp">2.87 Volts</span>        | <span class="cr">cr</span>        <span class="cm">← cr=超临界！主板电池快没电</span>
+<span class="cb">PS1 Status</span>       | <span class="cp">0x01</span>              | <span class="cg">ok</span>        <span class="cm">← 离散型传感器，位掩码表示状态</span></pre>
+
+  <table>
+    <tr><th>状态列</th><th>含义</th></tr>
+    <tr><td><span class="tag ok">ok</span></td><td>正常</td></tr>
+    <tr><td><span class="tag warn">nc</span></td><td>Non-Critical 越过非关键阈值（偏低/偏高）</td></tr>
+    <tr><td><span class="tag err">cr</span></td><td>Critical 越过关键阈值，需立即处理</td></tr>
+    <tr><td><span class="tag err">nr</span></td><td>Non-Recoverable 不可恢复，硬件级故障</td></tr>
+    <tr><td><span class="tag info">ns</span></td><td>Not Specified 未安装/无读数，多数情况可忽略</td></tr>
+    <tr><td><span class="tag p">na / no reading</span></td><td>传感器存在但当前无读数（如第二电源未插）</td></tr>
+  </table>
+
+  <h3>5.4 单传感器详情与阈值修改</h3>
+<pre><span class="ck">ipmitool sensor get "System Temp"</span>
+<span class="cb">Sensor ID</span>              : System Temp (0x1)
+<span class="cb">Sensor Type (Threshold)</span>  : Temperature
+<span class="cb">Sensor Reading</span>         : <span class="cp">28 (+/- 1) degrees C</span>    <span class="cm">← 当前读数</span>
+<span class="cb">Status</span>                 : <span class="cg">ok</span>
+<span class="cb">Lower Non-Recoverable</span>  : -9.000
+<span class="cb">Lower Critical</span>         : -4.000
+<span class="cb">Lower Non-Critical</span>     : 1.000
+<span class="cb">Upper Non-Critical</span>     : <span class="cp">75.000</span>                  <span class="cm">← 上非关键阈值</span>
+<span class="cb">Upper Critical</span>         : <span class="cp">80.000</span>
+<span class="cb">Upper Non-Recoverable</span>  : <span class="cp">85.000</span>
+<span class="cb">Assertions Enabled</span>     : unc+ ucr+ unr+            <span class="cm">← 越限时会写入 SEL</span>
+
+<span class="cm"># 修改阈值（三个档位：upper 顺序 unr→cr→nc，lower 反之）</span>
+<span class="ck">ipmitool sensor thresh "System Temp" upper 70 75 80</span>
+<span class="ck">ipmitool sensor thresh "FAN1" lower 500 800 1000</span>
+<span class="ck">ipmitool sensor thresh "FAN1" lower non-recoverable 500</span></pre>
+
+  <h3>5.5 SDR 缓存与导出（加速远程批量采集）</h3>
+<pre><span class="cm"># 远程跑 sdr 默认逐条查询很慢；先生成 SDR 缓存文件，之后用 -S 秒出</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass sdr dump /tmp/sdr-68.dat</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass</span> <span class="ca">-S /tmp/sdr-68.dat</span> sdr</pre>
+
+  <div class="exp"><b>经验：</b>机房批量采集 50 台机器温度，不用缓存要 5 分钟+，用 <code>sdr dump + -S</code> 后 30 秒内完成。监控脚本务必使用缓存。</div>
+</section>
+
+<!-- ==================== 06 FRU ==================== -->
+<section id="s06">
+  <h2><span class="num">06</span>FRU 硬件清单（fru）</h2>
+  <p>FRU 信息存储在板载 EEPROM 里，记录厂商、型号、序列号、生产日期等资产信息，<b>掉电不丢失</b>，是资产盘点的主要数据来源。</p>
+
+<pre><span class="ck">ipmitool fru</span>                  <span class="cm"># 列出全部 FRU 设备（ID 列表）</span>
+<span class="ck">ipmitool fru print</span>            <span class="cm"># 打印所有 FRU 详细信息</span>
+<span class="ck">ipmitool fru print 0</span>          <span class="cm"># 只打印 FRU 0（通常是主板）</span></pre>
+
+<pre><span class="co">FRU Device Description : Builtin FRU Device (ID 0)
+ Chassis Type          : Rack Mount Chassis      </span><span class="cm">← 机箱类型</span>
+<span class="co"> Chassis Part Number   : CSE-826                 </span><span class="cm">← 机箱型号</span>
+<span class="co"> Chassis Serial        : C8260XXXXXX             </span><span class="cm">← 机箱序列号</span>
+<span class="co"> Board Mfg Date        : Mon May  6 20:31:00 2019</span><span class="cm">← 主板生产日期</span>
+<span class="co"> Board Mfg             : Supermicro              </span><span class="cm">← 主板厂商</span>
+<span class="co"> Board Product         : X11DPH-T                </span><span class="cm">← 主板型号 ★</span>
+<span class="co"> Board Serial          : WM19XXXXXXXX            </span><span class="cm">← 主板 SN</span>
+<span class="co"> Product Manufacturer  : Supermicro
+ Product Name          : SYS-2029U-TR4           </span><span class="cm">← 整机型号 ★</span>
+<span class="co"> Product Part Number   : SYS-2029U-TR4
+ Product Serial        : S29XXXXXXXXX            </span><span class="cm">← 整机 SN ★（报修用）</span>
+<span class="co"> Product Asset Tag     : SRV-DB-001              </span><span class="cm">← 资产标签（可自定义）</span></pre>
+
+  <h3>6.1 FRU 读写操作</h3>
+<pre><span class="ck">ipmitool fru read 0 /root/fru0.bin</span>          <span class="cm"># 导出 FRU 原始数据（备份）</span>
+<span class="ck">ipmitool fru edit 0</span>                          <span class="cm"># 交互式编辑</span>
+<span class="ck">ipmitool fru edit 0 field p 1 "SYS-2029U"</span>    <span class="cm"># 修改 Product 区域第 1 字段</span>
+<span class="cm"># 区域代号: c=chassis  b=board  p=product</span></pre>
+
+  <div class="warn"><b>注意：</b>部分厂商的 FRU 写保护需在 BIOS 或 BMC 中解锁；修改资产标签更推荐用 <code>dcmi set_asset_tag</code>（见第 14 章），兼容性更好。</div>
+</section>
+
+<!-- ==================== 07 SEL ==================== -->
+<section id="s07">
+  <h2><span class="num">07</span>SEL 系统事件日志（sel）</h2>
+  <p>SEL 是 BMC 的"黑匣子"：温度越限、风扇失效、电源故障、ECC 报错、机箱入侵等硬件事件都会落盘。存储空间<b>有限</b>（常见 3~5 千条），写满后按策略覆盖或停止记录。</p>
+
+  <h3>7.1 查看与解读</h3>
+<pre><span class="ck">ipmitool sel info</span>               <span class="cm"># 容量、使用量、上次清空时间</span>
+<span class="ck">ipmitool sel list</span>               <span class="cm"># 列出全部事件</span>
+<span class="ck">ipmitool sel elist</span>              <span class="cm"># 扩展格式（显示传感器名，推荐）</span>
+<span class="ck">ipmitool sel list last 20</span>       <span class="cm"># 只看最近 20 条 ★日常巡检</span>
+<span class="ck">ipmitool sel list first 10</span>      <span class="cm"># 最早 10 条</span>
+<span class="ck">ipmitool sel get 0x1f4</span>          <span class="cm"># 按十六进制记录 ID 查看详情</span></pre>
+
+<pre><span class="co">   1 | 10/24/2026 | 03:12:41 | </span><span class="cb">Temperature #0x30</span><span class="co"> | </span><span class="cr">Upper Critical going high</span><span class="co"> | </span><span class="cr">Asserted</span>
+<span class="co">   2 | 10/24/2026 | 03:15:02 | </span><span class="cb">Temperature #0x30</span><span class="co"> | Upper Critical going high | </span><span class="cg">Deasserted</span>
+<span class="co">   3 | 10/25/2026 | 09:01:10 | </span><span class="cb">Power Supply #0x71</span><span class="co"> | </span><span class="cr">Failure detected</span><span class="co"> | </span><span class="cr">Asserted</span>
+<span class="co">   4 | 10/26/2026 | 11:22:00 | </span><span class="cb">Event Logging #0xfe</span><span class="co"> | Log Area Reset/Cleared | </span><span class="cg">Asserted</span></pre>
+  <p>列含义：<code>记录ID | 日期 | 时间 | 传感器#编号 | 事件描述 | Asserted(发生)/Deasserted(恢复)</code>。同一传感器先 Asserted 后 Deasserted = 故障已自愈；只有 Asserted 没有 Deasserted = 问题仍在。</p>
+
+  <h3>7.2 备份、清空与时间</h3>
+<pre><span class="ck">ipmitool sel save /root/sel-$(date +%F).log</span>   <span class="cm"># 文本备份（清空前必做！）</span>
+<span class="ck">ipmitool sel writeraw /root/sel.bin</span>           <span class="cm"># 二进制导出</span>
+<span class="ck">ipmitool sel readraw /root/sel.bin</span>            <span class="cm"># 二进制回读</span>
+<span class="ck">ipmitool sel delete 1024 1052</span>                 <span class="cm"># 删除 ID 区间</span>
+<span class="ck">ipmitool sel clear</span>                            <span class="cm"># 清空全部（厂商报修前常被要求执行）</span>
+
+<span class="ck">ipmitool sel time get</span>                         <span class="cm"># 查看 SEL 时钟</span>
+<span class="ck">ipmitool sel time set "10/26/2026 14:30:00"</span>   <span class="cm"># 手动校准（BMC 无 NTP 时常用）</span></pre>
+
+  <div class="exp"><b>经验：硬件报修标准动作</b> → <code>sel save</code> 备份 <span class="wn">→</span> <code>sel clear</code> 清空 <span class="wn">→</span> 跑压力/观察复现 <span class="wn">→</span> <code>sel list</span> 提取干净的新故障记录给厂商。混着旧日志的 SEL 会被厂商来回扯皮。</div>
+</section>
+
+<!-- ==================== 08 用户管理 ==================== -->
+<section id="s08">
+  <h2><span class="num">08</span>用户与权限管理（user / channel）</h2>
+
+  <h3>8.1 权限级别</h3>
+  <table>
+    <tr><th>级别号</th><th>名称</th><th>能力</th></tr>
+    <tr><td class="mono">1</td><td>CALLBACK</td><td>最低，基本只能发起会话</td></tr>
+    <tr><td class="mono">2</td><td>USER</td><td>只读：看传感器、日志，<b>不能</b>开关机</td></tr>
+    <tr><td class="mono">3</td><td>OPERATOR</td><td>可读 + 电源控制 + 启动项，<b>不能</b>改用户/网络</td></tr>
+    <tr><td class="mono">4</td><td>ADMINISTRATOR</td><td>完全控制</td></tr>
+    <tr><td class="mono">15 / 0xF</td><td>NO ACCESS</td><td>禁用该通道访问</td></tr>
+  </table>
+
+  <h3>8.2 用户操作</h3>
+<pre><span class="ck">ipmitool user list 1</span>            <span class="cm"># 查看 channel 1 的用户表 ★</span>
+<span class="ck">ipmitool user summary 1</span>         <span class="cm"># 汇总统计</span></pre>
+
+<pre><span class="co">ID  Name         Callin  Link Auth  IPMI Msg   Channel Priv Limit
+1                </span><span class="cr">true</span><span class="co">    </span><span class="cr">false</span><span class="co">      </span><span class="cg">true</span><span class="co">       ADMINISTRATOR    </span><span class="cm">← 空名匿名账户！安全隐患</span>
+<span class="co">2   admin        false   </span><span class="cg">true</span><span class="co">       true       ADMINISTRATOR
+3   monitor      true    true       true       </span><span class="cp">USER</span><span class="co">             </span><span class="cm">← 只读监控账户</span>
+<span class="co">4   operator01   true    true       true       </span><span class="cp">OPERATOR</span></pre>
+
+<pre><span class="cm"># 创建用户（找一个空 ID，通常 3~10）</span>
+<span class="ck">ipmitool user set name 3 monitor</span>
+<span class="ck">ipmitool user set password 3 'Mon#2026' 20</span>     <span class="cm"># 20=IPMI2.0 长密码；16=1.5 兼容</span>
+<span class="ck">ipmitool user priv 3 2 1</span>                       <span class="cm"># ID3 在 channel1 上权限=2(USER)</span>
+<span class="ck">ipmitool user enable 3</span>
+
+<span class="cm"># 改密码 / 禁用 / 测试</span>
+<span class="ck">ipmitool user set password 2 'NewPass#456' 20</span>
+<span class="ck">ipmitool user disable 4</span>
+<span class="ck">ipmitool user test 3 20 'Mon#2026'</span>             <span class="cm"># 验证密码是否正确（20/16 两种规格）</span>
+
+<span class="cm"># 通道访问细调</span>
+<span class="ck">ipmitool channel getaccess 1 3</span>
+<span class="ck">ipmitool channel setaccess 1 3 callin=on ipmi=on link=on privilege=2</span>
+<span class="ck">ipmitool channel authcap 1 4</span>                   <span class="cm"># 查看 channel 支持的认证类型</span>
+<span class="ck">ipmitool channel getciphers ipmi 1</span>             <span class="cm"># 查看支持的加密套件</span></pre>
+
+  <div class="danger"><b>安全要点：</b>① 很多主板出厂带<b>匿名账户</b>（ID1 空用户名），务必 <code>user disable 1</code> 或改名设密码；② 改掉 admin/ADMIN/ADMIN 之类的默认弱口令（Supermicro 历史上是 ADMIN/ADMIN，浪潮 admin/admin，华为 root/Huawei12#$，Dell root/calvin）；③ IPMI 2.0 连续输错密码会触发<b>账户锁定</b>（默认锁 60~600 秒），爆破防护的同时也容易被自己锁死。</div>
+</section>
+
+<!-- ==================== 09 LAN 网络配置 ==================== -->
+<section id="s09">
+  <h2><span class="num">09</span>BMC 网络配置（lan）</h2>
+
+  <h3>9.1 查看网络状态</h3>
+<pre><span class="ck">ipmitool lan print</span>          <span class="cm"># 打印所有 LAN channel</span>
+<span class="ck">ipmitool lan print 1</span>        <span class="cm"># 只看 channel 1（通常=第一个网口）</span></pre>
+
+<pre><span class="cb">Set in Progress</span>         : Set Complete
+<span class="cb">Auth Type Support</span>       : NONE MD2 MD5 PASSWORD
+<span class="cb">Auth Type Enable</span>        : Callback : MD2 MD5
+                        : Admin    : MD2 MD5 PASSWORD
+<span class="cb">IP Address Source</span>       : <span class="cp">Static Address</span>          <span class="cm">← 静态还是 DHCP ★</span>
+<span class="cb">IP Address</span>              : <span class="cp">192.168.10.68</span>           <span class="cm">← BMC 当前 IP ★</span>
+<span class="cb">Subnet Mask</span>             : 255.255.255.0
+<span class="cb">MAC Address</span>             : <span class="cp">ac:1f:6b:xx:xx:1b</span>       <span class="cm">← BMC 身份 MAC（failover 时不变）</span>
+<span class="cb">SNMP Community String</span>   : <span class="cr">public</span>                  <span class="cm">← 默认 public，必改！</span>
+<span class="cb">IP Header</span>               : TTL=0x40 Flags=0x40 Precedence=0x00 TOS=0x10
+<span class="cb">BMC ARP Control</span>         : ARP Responses Enabled, Gratuitous ARP Disabled
+<span class="cb">Gratituous ARP Intrvl</span>   : 2.0 seconds
+<span class="cb">Default Gateway IP</span>      : 192.168.10.1
+<span class="cb">802.1q VLAN ID</span>          : Disabled                 <span class="cm">← VLAN 状态</span>
+<span class="cb">RMCP+ Cipher Suites</span>     : 0,1,2,3,4,...,17         <span class="cm">← 支持的加密套件</span>
+<span class="cb">Cipher Suite Priv Max</span>   : XXXXaXXXXXXXXXX
+<span class="cb">Bad Password Threshold</span>  : 3                        <span class="cm">← 错 3 次锁定</span>
+<span class="cb">Attempt Count Reset Int.</span>: 600
+<span class="cb">User Lockout Interval</span>   : 600                      <span class="cm">← 锁 600 秒</span></pre>
+
+  <h3>9.2 配置 IP（装机标配流程）</h3>
+<pre><span class="cm"># 静态 IP 四连（顺序无所谓，全部生效后 BMC 网络自动重启）</span>
+<span class="ck">ipmitool lan set 1 ipsrc static</span>
+<span class="ck">ipmitool lan set 1 ipaddr 192.168.10.68</span>
+<span class="ck">ipmitool lan set 1 netmask 255.255.255.0</span>
+<span class="ck">ipmitool lan set 1 defgw ipaddr 192.168.10.1</span>
+
+<span class="cm"># 改回 DHCP</span>
+<span class="ck">ipmitool lan set 1 ipsrc dhcp</span>
+
+<span class="cm"># SNMP 团体名（默认 public 必须改）</span>
+<span class="ck">ipmitool lan set 1 snmp 'N0tPublic#'</span>
+
+<span class="cm"># 认证类型收紧</span>
+<span class="ck">ipmitool lan set 1 auth ADMIN MD5,PASSWORD</span></pre>
+
+  <h3>9.3 VLAN / ARP / 其他</h3>
+<pre><span class="ck">ipmitool lan set 1 vlan id 100</span>            <span class="cm"># 打 VLAN 100</span>
+<span class="ck">ipmitool lan set 1 vlan id off</span>            <span class="cm"># 关闭 VLAN</span>
+<span class="ck">ipmitool lan set 1 vlan priority 3</span>
+<span class="ck">ipmitool lan set 1 arp respond on</span>         <span class="cm"># 响应 ARP 请求</span>
+<span class="ck">ipmitool lan set 1 arp generate on</span>        <span class="cm"># 主动发免费 ARP（IP 变更后刷新交换机）</span>
+<span class="ck">ipmitool lan set 1 arp interval 5</span>         <span class="cm"># 免费 ARP 间隔（秒）</span>
+<span class="ck">ipmitool lan stats get 1</span>                  <span class="cm"># 通道收发统计</span>
+<span class="ck">ipmitool lan stats clear 1</span></pre>
+
+  <h3>9.4 PET 告警目标（配合 PEF）</h3>
+<pre><span class="ck">ipmitool lan alert print 1 1</span>                        <span class="cm"># 查看 channel1 的告警目标1</span>
+<span class="ck">ipmitool lan alert set 1 1 ipaddr 192.168.10.200</span>    <span class="cm"># SNMP Trap 接收端</span>
+<span class="ck">ipmitool lan alert set 1 1 macaddr aa:bb:cc:dd:ee:ff</span>
+<span class="ck">ipmitool lan alert set 1 1 retry 3</span>
+<span class="ck">ipmitool lan alert set 1 1 time 10</span></pre>
+
+  <div class="exp"><b>实战经验（WRX90E 案例）：</b>BMC 网口分 <b>Dedicated 专用口</b> 与 <b>NC-SI 共享口</b>（借用主机网卡出口）。部分固件做成<b>单通道 + failover</b>：<code>lan print 1</code> 正常但 <code>lan print 2~7</code> 全报 Invalid 属正常；failover 切换时身份 MAC/IP 不变、只换物理出口。若出现 <span class="wn">→</span> 专用口插线灯全灭 <span class="wn">→</span> lan print 显示 IP/MAC 正常但不通 <span class="wn">→</span> 排查顺序：<code>mc reset cold</code> 重启 BMC <span class="wn">→</span> 整机断电 60 秒 <span class="wn">→</span> 重刷同版固件 <span class="wn">→</span> 仍无效则基本可判定 <b>PHY 芯片或板级链路硬件故障</b>。</div>
+</section>
+
+<!-- ==================== 10 SOL ==================== -->
+<section id="s10">
+  <h2><span class="num">10</span>SOL 串口重定向（sol）</h2>
+  <p>SOL 把主板物理串口的内容经 BMC 透传到网络——可以在办公室看到机房服务器的 <b>BIOS POST 过程、grub 菜单、内核启动日志、OS 控制台</b>，是远程装系统、救砖的核心手段。注意：SOL 看的是<b>串口输出</b>，不是显卡画面（画面要用厂商 KVM）。</p>
+
+  <div class="figure">
+<svg width="920" height="220" viewBox="0 0 920 220" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,monospace">
+  <defs><marker id="ar3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#22d3ee"/></marker></defs>
+  <rect x="20" y="60" width="180" height="100" rx="10" fill="#131d27" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="110" y="92" fill="#22d3ee" font-size="13" text-anchor="middle" font-weight="bold">管理员终端</text>
+  <text x="110" y="114" fill="#8ba3b8" font-size="11" text-anchor="middle">ipmitool -I lanplus</text>
+  <text x="110" y="132" fill="#8ba3b8" font-size="11" text-anchor="middle">sol activate</text>
+  <rect x="300" y="60" width="130" height="100" rx="10" fill="#0e1b26" stroke="#fbbf24"/>
+  <text x="365" y="98" fill="#fbbf24" font-size="12" text-anchor="middle">UDP 623</text>
+  <text x="365" y="118" fill="#8ba3b8" font-size="11" text-anchor="middle">RMCP+ 加密通道</text>
+  <rect x="520" y="60" width="130" height="100" rx="10" fill="#101820" stroke="#34d399" stroke-width="1.5"/>
+  <text x="585" y="92" fill="#34d399" font-size="13" text-anchor="middle" font-weight="bold">BMC</text>
+  <text x="585" y="114" fill="#8ba3b8" font-size="11" text-anchor="middle">SOL 引擎</text>
+  <text x="585" y="132" fill="#8ba3b8" font-size="11" text-anchor="middle">Payload</text>
+  <rect x="740" y="60" width="160" height="100" rx="10" fill="#131d27" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="820" y="92" fill="#fb923c" font-size="13" text-anchor="middle" font-weight="bold">主板 UART/COM2</text>
+  <text x="820" y="114" fill="#8ba3b8" font-size="11" text-anchor="middle">BIOS 串口重定向</text>
+  <text x="820" y="132" fill="#8ba3b8" font-size="11" text-anchor="middle">grub / getty / kmsg</text>
+  <line x1="200" y1="110" x2="296" y2="110" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#ar3)"/>
+  <line x1="430" y1="110" x2="516" y2="110" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#ar3)"/>
+  <line x1="650" y1="110" x2="736" y2="110" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#ar3)"/>
+  <text x="460" y="200" fill="#5f7689" font-size="12" text-anchor="middle">数据流：BIOS/OS → UART → BMC 封装 RMCP+ → 网络 → ipmitool 解封装 → 终端显示（反向为键盘输入）</text>
+</svg>
+    <div class="cap">图 2 · SOL 数据流：串口字节流在 BMC 与 ipmitool 之间经 RMCP+ 加密透传</div>
+  </div>
+
+  <h3>10.1 BMC 侧配置（一次到位）</h3>
+<pre><span class="ck">ipmitool sol info 1</span>                              <span class="cm"># 查看当前 SOL 配置</span>
+<span class="ck">ipmitool sol set enabled true 1</span>                  <span class="cm"># 启用 SOL</span>
+<span class="ck">ipmitool sol set force-encryption true 1</span>         <span class="cm"># 强制加密（必须）</span>
+<span class="ck">ipmitool sol set force-authentication true 1</span>
+<span class="ck">ipmitool sol set privilege-level operator 1</span>      <span class="cm"># 最低所需权限</span>
+<span class="ck">ipmitool sol set non-volatile-bit-rate 115.2 1</span>   <span class="cm"># 掉电保存波特率 115200 ★</span>
+<span class="ck">ipmitool sol set volatile-bit-rate 115.2 1</span>       <span class="cm"># 本次生效波特率</span>
+<span class="ck">ipmitool sol set retry-count 7 1</span>
+<span class="ck">ipmitool sol set retry-interval 10 1</span>
+<span class="ck">ipmitool sol payload enable 1 2</span>                  <span class="cm"># channel1 上启用 payload 2</span></pre>
+
+  <h3>10.2 BIOS 与 OS 侧配套（缺一不可）</h3>
+  <table>
+    <tr><th>层</th><th>配置项</th><th>推荐值</th></tr>
+    <tr><td>BIOS</td><td>Serial Port Console Redirection（COM2/SOL）</td><td>Enabled，115200，8N1，VT100/VT-UTF8，Flow Control None</td></tr>
+    <tr><td>grub</td><td><code>/etc/default/grub</code> 的 GRUB_CMDLINE_LINUX</td><td><code>console=tty0 console=ttyS1,115200n8</code></td></tr>
+    <tr><td>grub</td><td>GRUB_TERMINAL / GRUB_SERIAL_COMMAND</td><td><code>serial --speed=115200 --unit=1</code></td></tr>
+    <tr><td>OS</td><td>串口登录终端</td><td><code>systemctl enable --now serial-getty@ttyS1</code></td></tr>
+  </table>
+  <div class="warn"><b>ttyS0 还是 ttyS1？</b>多数服务器 SOL 挂在 <b>COM2 = ttyS1</b>；部分主板（如部分超微）是 COM1 = ttyS0。配错端口的典型症状：SOL 能连上但<b>黑屏无任何输出</b>。用 <code>dmesg | grep ttyS</code> 与 BIOS 里的串口重定向页对照确认。</div>
+
+  <h3>10.3 使用与退出</h3>
+<pre><span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass sol activate</span>
+<span class="co">[SOL Session operational.  Use ~? for help]</span>        <span class="cm">← 出现这行即成功</span>
+
+<span class="ck">ipmitool -I lanplus ... sol deactivate</span>             <span class="cm"># 从别处踢掉占用中的 SOL 会话</span></pre>
+  <table>
+    <tr><th>按键</th><th>作用</th></tr>
+    <tr><td class="mono">~.</td><td><b>退出 SOL 会话</b>（最常用；先按 ~ 再按 .）</td></tr>
+    <tr><td class="mono">~?</td><td>显示全部转义命令</td></tr>
+    <tr><td class="mono">~B</td><td>发送 BREAK（常用于触发 sysrq / 进入 ROM monitor）</td></tr>
+    <tr><td class="mono">~R</td><td>重连</td></tr>
+    <tr><td class="mono">~~</td><td>输入字面的 ~ 字符</td></tr>
+  </table>
+  <div class="tip"><b>经验：</b>进入 SOL 后是黑屏 ≠ 故障，先按几次<b>回车</b>唤醒 getty 提示符；装系统阶段看不到 grub 菜单时，检查 grub 的 serial 配置与波特率是否两端一致（115200 对 115200）。</div>
+</section>
+
+<!-- ==================== 11 PEF ==================== -->
+<section id="s11">
+  <h2><span class="num">11</span>PEF 平台事件过滤（pef）</h2>
+  <p>PEF 定义事件触发策略：<b>当某传感器出事时，BMC 做什么</b>——发 SNMP Trap(PET)、断电、复位、断电循环、OEM 动作。出厂通常已内置"温度致命 → 断电保护"等默认策略。</p>
+<pre><span class="ck">ipmitool pef info</span>           <span class="cm"># PEF 版本与全局能力</span>
+<span class="ck">ipmitool pef capabilities</span>   <span class="cm"># 支持的动作与过滤器数量</span>
+<span class="ck">ipmitool pef status</span>         <span class="cm"># 当前策略表状态</span>
+<span class="ck">ipmitool pef policy</span>         <span class="cm"># 查看策略表（事件→动作映射）★</span>
+<span class="ck">ipmitool pef list</span>           <span class="cm"># 查看事件过滤器表</span></pre>
+<pre><span class="co"> 1 | 1 | 0xff | </span><span class="cg">Match</span><span class="co"> | pre-config | </span><span class="cp">power-down</span><span class="co"> | ...   </span><span class="cm">← 过滤器1命中→执行断电</span>
+<span class="co"> 2 | 1 | 0xff | </span><span class="cg">Match</span><span class="co"> | pre-config | </span><span class="cp">alert</span><span class="co">      | ...   </span><span class="cm">← 过滤器2命中→发 PET 告警</span></pre>
+  <div class="tip">日常运维<b>看懂 policy/list 输出即可</b>，策略修改（<code>pef set</code>）涉及过滤器位掩码，出错会导致告警失效或误断电，生产环境改动前务必记录原值。告警链路完整验证：PEF 过滤器 → policy 动作=alert → lan alert 目标地址 → 管理站收到 SNMP Trap。</div>
+</section>
+
+<!-- ==================== 12 BMC 自管理 ==================== -->
+<section id="s12">
+  <h2><span class="num">12</span>BMC 自管理与看门狗（mc / bmc）</h2>
+
+  <h3>12.1 信息查询</h3>
+<pre><span class="ck">ipmitool mc info</span>            <span class="cm"># 与 bmc info 完全等价 ★</span>
+<span class="ck">ipmitool bmc info</span></pre>
+<pre><span class="cb">Device ID</span>                 : 32
+<span class="cb">Device Revision</span>           : 1
+<span class="cb">Firmware Revision</span>         : <span class="cp">3.91</span>                      <span class="cm">← BMC 固件版本 ★报修必附</span>
+<span class="cb">IPMI Version</span>              : <span class="cp">2.0</span>                       <span class="cm">← 协议版本</span>
+<span class="cb">Manufacturer ID</span>           : <span class="cp">4753</span>                      <span class="cm">← 厂商 IANA 编号</span>
+<span class="cb">Manufacturer Name</span>         : Unknown (0x1291)
+<span class="cb">Product ID</span>                : 3842 (0x0f02)
+<span class="cb">Device Available</span>          : <span class="cg">normal operation</span>          <span class="cm">← busy=固件升级中</span>
+<span class="cb">Provides Device SDRs</span>      : no
+<span class="cb">Additional Device Support</span> : Sensor Device, SDR Repository Device, SEL Device,
+                            FRU Inventory Device, IPMB Event Receiver,
+                            IPMB Event Generator, Chassis Device</pre>
+
+<pre><span class="ck">ipmitool mc guid</span>                              <span class="cm"># BMC 全局唯一标识</span>
+<span class="ck">ipmitool mc selftest</span>                          <span class="cm"># 自检测试</span>
+<span class="ck">ipmitool mc getenables</span>                        <span class="cm"># 全局功能开关状态</span>
+<span class="ck">ipmitool mc setenables system_event_log=on</span>    <span class="cm"># 打开 SEL 记录</span>
+<span class="ck">ipmitool mc getsysinfo system_name</span>            <span class="cm"># 读系统名（还有 primary_os_name 等）</span>
+<span class="ck">ipmitool mc setsysinfo system_name "DB-NODE-01"</span>
+<span class="ck">ipmitool mc getpowermac</span>                       <span class="cm"># 查看电源 MAC 相关（部分平台）</span></pre>
+
+  <h3>12.2 重启 BMC（运维高频操作）</h3>
+<pre><span class="ck">ipmitool mc reset cold</span>      <span class="cm"># 冷重启 BMC（30~90 秒恢复，主机业务不受影响）★</span>
+<span class="ck">ipmitool mc reset warm</span>      <span class="cm"># 热重启（温和，部分问题清不掉）</span></pre>
+  <div class="warn"><b>使用场景：</b>BMC Web 打不开、IPMI 无响应、传感器读数全 na、KVM 卡死，<b>但主机业务正常</b>时——先 <code>mc reset cold</code>。它只重启管理芯片，<b>不会</b>触碰主机 CPU/内存/业务。重启后等 1~2 分钟再连。</div>
+
+  <h3>12.3 看门狗 watchdog</h3>
+  <p>原理：OS 内的守护进程周期性"喂狗"（复位倒计时）；OS 挂死停止喂狗 → 倒计时归零 → BMC 执行预设动作（复位/断电/仅记录），实现<b>无人值守自愈</b>。</p>
+<pre><span class="ck">ipmitool mc watchdog get</span>      <span class="cm"># 查看当前配置与倒计时</span>
+<span class="ck">ipmitool mc watchdog off</span>      <span class="cm"># 停止并关闭</span>
+<span class="ck">ipmitool mc watchdog reset</span>    <span class="cm"># 喂狗（重置倒计时）</span></pre>
+  <div class="tip">生产环境一般配合 <code>openipmi</code> 的 ipmi_watchdog 内核模块或 systemd watchdog 使用：加载 <code>ipmi_watchdog</code> 模块后由 systemd 自动喂狗，OS 僵死时触发自动复位。注意驱动编译/打补丁类的维护窗口期要<b>先停喂狗</b>，否则维护中途会被强制复位。</div>
+</section>
+
+<!-- ==================== 13 raw ==================== -->
+<section id="s13">
+  <h2><span class="num">13</span>raw 原始命令（raw）</h2>
+  <p><code>ipmitool raw &lt;NetFn&gt; &lt;Cmd&gt; [data...]</code> 直接发送原始 IPMI 报文。用途：① 高层命令不覆盖的功能；② 厂商私有 OEM 命令；③ 调试验证。参数均为十六进制字节。</p>
+
+  <h3>13.1 NetFn 功能域表</h3>
+  <table>
+    <tr><th>NetFn(请求)</th><th>功能域</th><th>典型命令</th></tr>
+    <tr><td class="mono">0x00</td><td>Chassis 机箱</td><td>电源控制、启动项、定位灯、重启原因</td></tr>
+    <tr><td class="mono">0x02</td><td>Bridge 桥接</td><td>ICMB 桥接（罕见）</td></tr>
+    <tr><td class="mono">0x04</td><td>Sensor/Event</td><td>传感器读数、阈值、平台事件</td></tr>
+    <tr><td class="mono">0x06</td><td>Application 应用</td><td>设备 ID、BMC 复位、自检、GUID、ACPI</td></tr>
+    <tr><td class="mono">0x08</td><td>Firmware 固件</td><td>固件升级相关</td></tr>
+    <tr><td class="mono">0x0a</td><td>Storage 存储</td><td>FRU、SDR、SEL 读写</td></tr>
+    <tr><td class="mono">0x0c</td><td>Transport 传输</td><td>LAN/SOL/串口配置参数</td></tr>
+    <tr><td class="mono">0x2c</td><td>Group Extension</td><td>分组扩展（DCMI 走这里）</td></tr>
+    <tr><td class="mono">0x2e/0x30 等</td><td>OEM</td><td>厂商私有（Intel 常用 0x30）</td></tr>
+  </table>
+
+  <h3>13.2 高频 raw 命令对照表</h3>
+  <table>
+    <tr><th>功能</th><th>raw 命令</th><th>等价高层命令</th></tr>
+    <tr><td>读设备 ID</td><td class="mono">raw 0x06 0x01</td><td class="mono">bmc info</td></tr>
+    <tr><td>BMC 冷复位</td><td class="mono">raw 0x06 0x02</td><td class="mono">mc reset cold</td></tr>
+    <tr><td>BMC 热复位</td><td class="mono">raw 0x06 0x03</td><td class="mono">mc reset warm</td></tr>
+    <tr><td>自检结果</td><td class="mono">raw 0x06 0x04</td><td class="mono">mc selftest</td></tr>
+    <tr><td>读 GUID</td><td class="mono">raw 0x06 0x08</td><td class="mono">mc guid</td></tr>
+    <tr><td>机箱状态</td><td class="mono">raw 0x00 0x01</td><td class="mono">chassis status</td></tr>
+    <tr><td>强制关机</td><td class="mono">raw 0x00 0x02 0x00</td><td class="mono">power off</td></tr>
+    <tr><td>开机</td><td class="mono">raw 0x00 0x02 0x01</td><td class="mono">power on</td></tr>
+    <tr><td>断电循环</td><td class="mono">raw 0x00 0x02 0x02</td><td class="mono">power cycle</td></tr>
+    <tr><td>硬复位</td><td class="mono">raw 0x00 0x02 0x03</td><td class="mono">power reset</td></tr>
+    <tr><td>NMI 中断</td><td class="mono">raw 0x00 0x02 0x04</td><td class="mono">power diag</td></tr>
+    <tr><td>ACPI 软关机</td><td class="mono">raw 0x00 0x02 0x05</td><td class="mono">power soft</td></tr>
+    <tr><td>定位灯闪 60s</td><td class="mono">raw 0x00 0x04 0x3c</td><td class="mono">chassis identify 60</td></tr>
+    <tr><td>关闭定位灯</td><td class="mono">raw 0x00 0x04 0x00</td><td class="mono">chassis identify 0</td></tr>
+    <tr><td>断电恢复=总是开机</td><td class="mono">raw 0x00 0x06 0x02</td><td class="mono">chassis policy always-on</td></tr>
+    <tr><td>断电恢复=保持原状</td><td class="mono">raw 0x00 0x06 0x01</td><td class="mono">chassis policy previous</td></tr>
+    <tr><td>读断电恢复策略</td><td class="mono">raw 0x00 0x07</td><td class="mono">chassis status 中的一行</td></tr>
+    <tr><td>读重启原因</td><td class="mono">raw 0x00 0x08</td><td class="mono">chassis restart_cause</td></tr>
+    <tr><td>下次 PXE 启动</td><td class="mono">raw 0x00 0x08 0x05 0xe0 0x04 0x00 0x00 0x00</td><td class="mono">chassis bootdev pxe</td></tr>
+    <tr><td>下次硬盘启动</td><td class="mono">raw 0x00 0x08 0x05 0xe0 0x08 0x00 0x00 0x00</td><td class="mono">chassis bootdev disk</td></tr>
+    <tr><td>下次光盘启动</td><td class="mono">raw 0x00 0x08 0x05 0xe0 0x14 0x00 0x00 0x00</td><td class="mono">chassis bootdev cdrom</td></tr>
+    <tr><td>下次进 BIOS</td><td class="mono">raw 0x00 0x08 0x05 0xe0 0x18 0x00 0x00 0x00</td><td class="mono">chassis bootdev bios</td></tr>
+  </table>
+
+  <h3>13.3 读数示例解读</h3>
+<pre><span class="ck">ipmitool raw 0x06 0x01</span>
+<span class="co"> 20 01 02 15 02 bf 4c 1c 00 1e 32</span>
+<span class="cm">  ↑  ↑  ↑  ↑  ↑  └─ Manufacturer ID (LSB先)
+  ↑  ↑  ↑  ↑  └─ IPMI 版本: bit0=1 → 支持 IPMI 2.0
+  ↑  ↑  ↑  └─ 固件修订: 2.21 (低4位.高4位)
+  ↑  ↑  └─ 设备修订
+  └─ 设备 ID = 0x20 = 32</span></pre>
+  <div class="danger"><b>警告：</b>raw 命令<b>没有参数校验</b>，写操作类 raw（尤其 0x0a 存储域、0x2e/0x30 OEM 域）发错字节可能损坏 FRU/SEL 数据或触发未知行为。生产环境执行前先在同型号测试机上验证。</div>
+</section>
+
+<!-- ==================== 14 DCMI ==================== -->
+<section id="s14">
+  <h2><span class="num">14</span>DCMI 数据中心功耗管理（dcmi）</h2>
+  <p>DCMI 是 Intel 主导的精简管理接口，<b>数据中心场景最实用的功能是读整机功耗与功耗封顶</b>，Intel 平台服务器基本都支持，AMD 平台部分支持。</p>
+<pre><span class="ck">ipmitool dcmi discover</span>                    <span class="cm"># 探测是否支持 DCMI ★先跑这条</span>
+<span class="ck">ipmitool dcmi power reading</span>               <span class="cm"># 读整机实时功率 ★最常用</span></pre>
+<pre><span class="cb">Instantaneous power reading</span> : <span class="cp">342 Watts</span>      <span class="cm">← 实时功率</span>
+<span class="cb">Minimum during sampling period</span>: <span class="cp">180 Watts</span>     <span class="cm">← 采样期最小</span>
+<span class="cb">Maximum during sampling period</span>: <span class="cp">455 Watts</span>     <span class="cm">← 采样期最大（配 PDU 容量参考）</span>
+<span class="cb">Average power reading over sample period</span>: <span class="cp">310 Watts</span>
+<span class="cb">IPMI timestamp</span>:                ...
+<span class="cb">Sampling period</span>:               00000001 Seconds.
+<span class="cb">Power reading state is</span>:        <span class="cg">activated</span></pre>
+<pre><span class="ck">ipmitool dcmi power get_limit</span>             <span class="cm"># 查看功耗封顶配置</span>
+<span class="ck">ipmitool dcmi power set_limit limit 500</span>   <span class="cm"># 封顶 500W（超了自动降频）</span>
+<span class="ck">ipmitool dcmi power activate</span>              <span class="cm"># 激活封顶策略</span>
+<span class="ck">ipmitool dcmi power deactivate</span>
+<span class="ck">ipmitool dcmi sensors</span>                     <span class="cm"># DCMI 视角的传感器列表</span>
+<span class="ck">ipmitool dcmi get_temp_reading</span>            <span class="cm"># 进风口温度等</span>
+<span class="ck">ipmitool dcmi get_asset_tag</span>
+<span class="ck">ipmitool dcmi set_asset_tag "SRV-DB-001"</span>  <span class="cm"># 写资产标签（比 fru edit 兼容性好）</span>
+<span class="ck">ipmitool dcmi get_mc_id_string</span>
+<span class="ck">ipmitool dcmi set_mc_id_string "bmc-node01"</span>
+<span class="ck">ipmitool dcmi thermalpolicy get</span>
+<span class="ck">ipmitool dcmi get_dcmi_capability_info</span></pre>
+  <div class="tip"><b>机柜电力规划：</b>批量采集各节点 <code>dcmi power reading</code> 的 Maximum 值求和 ×0.8 冗余系数，即为 PDU 容量下限。比看电源铭牌功率（虚高）准确得多。</div>
+</section>
+
+<!-- ==================== 15 固件升级 ==================== -->
+<section id="s15">
+  <h2><span class="num">15</span>固件升级（hpm / fwum）</h2>
+
+  <h3>15.1 HPM.1 标准升级（推荐，保留配置）</h3>
+  <p>适用于提供 <code>.hpm</code> 固件包的厂商（多数现代 BMC 固件包）：</p>
+<pre><span class="cm"># 第一步：检查镜像与本机 BMC 的兼容性（只检查不写入）</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass hpm check AST2600-3.91.hpm</span>
+<span class="co">Target ID: 0x20, Image OK, Rollback available</span>
+
+<span class="cm"># 第二步：上传升级（过程 5~15 分钟，BMC 期间不可用）</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass hpm upgrade AST2600-3.91.hpm</span>
+
+<span class="cm"># 可选：升级后激活新固件（部分机型自动激活）</span>
+<span class="ck">ipmitool ... hpm activate</span>
+
+<span class="cm"># 辅助命令</span>
+<span class="ck">ipmitool hpm targetcap</span>      <span class="cm"># BMC 支持的 HPM 能力</span>
+<span class="ck">ipmitool hpm upgstatus</span>      <span class="cm"># 查询上次升级状态</span>
+<span class="ck">ipmitool hpm rollback</span>       <span class="cm"># 回滚到旧版本（需 BMC 支持双镜像）</span></pre>
+
+  <h3>15.2 fwum（KCS 通道本地升级，老平台）</h3>
+<pre><span class="ck">ipmitool fwum status</span>                  <span class="cm"># 查询状态</span>
+<span class="ck">ipmitool fwum download bmc-fw.bin</span>     <span class="cm"># 本地下载固件到 BMC</span>
+<span class="ck">ipmitool fwum upgrade</span>                 <span class="cm"># 执行升级</span>
+<span class="ck">ipmitool fwum rollback</span>                <span class="cm"># 回滚</span>
+<span class="ck">ipmitool fwum trace</span>                   <span class="cm"># 升级日志</span></pre>
+
+  <div class="danger"><b>升级纪律：</b>① 升级包型号必须<b>严格匹配主板型号</b>（刷错变砖，需 SPI 编程器救）；② 升级期间<b>禁止断电/重启主机</b>；③ hpm upgrade 默认<b>保留</b>配置，加 <code>nostatic</code> 等参数才会重置，看清厂商说明；④ 升级后 BMC 会自动重启，等待 2~3 分钟再验证 <code>bmc info</code> 的 Firmware Revision。</div>
+</section>
+
+<!-- ==================== 16 OEM 命令 ==================== -->
+<section id="s16">
+  <h2><span class="num">16</span>OEM 厂商扩展命令</h2>
+
+  <h3>16.1 Dell（delloem，对应 iDRAC）</h3>
+<pre><span class="ck">ipmitool delloem sysinfo</span>              <span class="cm"># 整机信息汇总（服务标签、BIOS版本等）★</span>
+<span class="ck">ipmitool delloem mac list</span>             <span class="cm"># 全部网口 MAC（含 LOM/夹层卡）</span>
+<span class="ck">ipmitool delloem lan get</span>              <span class="cm"># iDRAC 网络模式（shared/dedicated）</span>
+<span class="ck">ipmitool delloem lan set dedicated</span>    <span class="cm"># 切到专用口</span>
+<span class="ck">ipmitool delloem powermonitor</span>         <span class="cm"># 功耗统计（累计/峰值）</span>
+<span class="ck">ipmitool delloem powermonitor clear cumulativepower</span>
+<span class="ck">ipmitool delloem vflash list</span>          <span class="cm"># vFlash SD 卡状态</span>
+<span class="ck">ipmitool delloem lcd set mode userdefined "DB-PRIMARY"</span>   <span class="cm"># 前面板 LCD 自定义文字</span>
+<span class="ck">ipmitool delloem lcd info</span></pre>
+
+  <h3>16.2 Oracle/Sun（sunoem）</h3>
+<pre><span class="ck">ipmitool sunoem cli "show /SP/network"</span>   <span class="cm"># 透传 ILOM CLI 命令 ★万能后门</span>
+<span class="ck">ipmitool sunoem led get all</span>              <span class="cm"># 全部 LED 状态</span>
+<span class="ck">ipmitool sunoem led set LOCATE FAST_BLINK</span>
+<span class="ck">ipmitool sunoem sshkey set ...</span>           <span class="cm"># 配置 ILOM SSH 密钥</span>
+<span class="ck">ipmitool sunoem nvalist</span>                  <span class="cm"># NV 配置列表</span>
+<span class="ck">ipmitool sunoem forcepw</span></pre>
+
+  <h3>16.3 Intel（nm 节点管理器 + oem）</h3>
+<pre><span class="ck">ipmitool nm discover</span>                <span class="cm"># 探测 Node Manager 版本</span>
+<span class="ck">ipmitool nm statistics power</span>        <span class="cm"># 功耗统计</span>
+<span class="ck">ipmitool nm policy add policy_id 0 domain platform power 800 ...</span>  <span class="cm"># 功耗封顶策略</span>
+<span class="ck">ipmitool nm threshold get ...</span>
+<span class="ck">ipmitool nm alert ...</span>
+<span class="cm"># Intel 平台 OEM raw 示例（NetFn 0x30）：读 ME 固件版本等，具体字节查平台手册</span></pre>
+
+  <h3>16.4 其他</h3>
+<pre><span class="ck">ipmitool kontronoem ...</span>     <span class="cm"># Kontron 控创（前面板 LED、FRU 数据）</span>
+<span class="ck">ipmitool oem</span>                <span class="cm"># 通用 OEM 透传入口（用法随厂商）</span>
+<span class="ck">ipmitool -o list</span>            <span class="cm"># 列出支持的 OEM 类型</span></pre>
+  <div class="warn"><b>Supermicro / 华硕 / 浪潮 / 华为</b>没有专用 ipmitool 子命令，它们的私有功能通过 <code>raw 0x30/0x32/0x3c ...</code> OEM 字节实现——各厂商字节定义<b>互不兼容</b>且部分未公开，务必查对应厂商的 IPMI 手册。浪潮/华为场景更推荐厂商自带的 RESTful 工具或 Redfish。</div>
+</section>
+
+<!-- ==================== 17 其余子命令 ==================== -->
+<section id="s17">
+  <h2><span class="num">17</span>其余子命令速览</h2>
+  <table>
+    <tr><th>子命令</th><th>作用</th><th>使用频率</th></tr>
+    <tr><td class="mono">exec &lt;file&gt;</td><td>从文件批量执行 ipmitool 命令（一行一条，免密码文件配合 -f 可无人值守）</td><td><span class="tag info">常用</span></td></tr>
+    <tr><td class="mono">set</td><td>设置会话级参数（host/user/password/privlvl），配合 exec 文件用</td><td><span class="tag">少见</span></td></tr>
+    <tr><td class="mono">session</td><td>查看活动会话：<code>session info active</code> / <code>info all</code> / <code>info id &lt;x&gt;</code></td><td><span class="tag">少见</span></td></tr>
+    <tr><td class="mono">event &lt;file|预定义&gt;</td><td>手动注入一条测试事件进 SEL（验证 PEF/告警链路）</td><td><span class="tag info">调试有用</span></td></tr>
+    <tr><td class="mono">sdr dump / info</td><td>SDR 仓库导出与信息统计</td><td><span class="tag info">常用</span></td></tr>
+    <tr><td class="mono">gendev</td><td>读写 generic device（厂商定制传感器板）</td><td><span class="tag">罕见</span></td></tr>
+    <tr><td class="mono">i2c</td><td>直接发起 I2C 主控写读（硬件调试级，慎用）</td><td><span class="tag warn">危险</span></td></tr>
+    <tr><td class="mono">spd</td><td>经 IPMB 读内存 SPD 信息（条子型号/厂商，免装 OS 工具）</td><td><span class="tag info">偶用</span></td></tr>
+    <tr><td class="mono">picmg</td><td>ATCA 刀片平台属性（front panel、地址、FRU 激活）</td><td><span class="tag">ATCA 专用</span></td></tr>
+    <tr><td class="mono">ekanalyzer</td><td>ATCA FRU-Ekeying 分析器（背板互联校验）</td><td><span class="tag">ATCA 专用</span></td></tr>
+    <tr><td class="mono">vita</td><td>VITA 46.11（VPX 平台）管理命令</td><td><span class="tag">VPX 专用</span></td></tr>
+    <tr><td class="mono">firewall</td><td>固件防火墙配置（多数平台不支持）</td><td><span class="tag">罕见</span></td></tr>
+    <tr><td class="mono">tsol</td><td>Tyan 平台私有 SOL 变体</td><td><span class="tag">罕见</span></td></tr>
+    <tr><td class="mono">ime</td><td>Intel ME 固件更新通道</td><td><span class="tag">罕见</span></td></tr>
+  </table>
+  <pre><span class="cm"># exec 批量执行示例：cmds.txt 内容（注意是裸命令，不带 ipmitool 前缀）</span>
+<span class="co">chassis power status
+sdr type Temperature
+sel list last 5</span>
+<span class="ck">ipmitool -I lanplus -H 192.168.10.68 -U admin -f pass exec cmds.txt</span></pre>
+</section>
+
+<!-- ==================== 18 全局选项 ==================== -->
+<section id="s18">
+  <h2><span class="num">18</span>全局选项速查（ipmitool -h）</h2>
+  <table>
+    <tr><th>选项</th><th>含义</th><th>备注</th></tr>
+    <tr><td class="mono">-I &lt;intf&gt;</td><td>接口：open(默认)/lan/lanplus/free/serial</td><td>远程必加 lanplus</td></tr>
+    <tr><td class="mono">-H &lt;host&gt;</td><td>BMC 地址（IP 或主机名）</td><td>远程必加</td></tr>
+    <tr><td class="mono">-p &lt;port&gt;</td><td>RMCP 端口</td><td>默认 623</td></tr>
+    <tr><td class="mono">-U &lt;user&gt;</td><td>用户名</td><td>区分大小写</td></tr>
+    <tr><td class="mono">-P &lt;pass&gt;</td><td>明文密码</td><td>⚠ 会留在 shell 历史</td></tr>
+    <tr><td class="mono">-a</td><td>交互式提示输入密码</td><td>推荐手工操作时用</td></tr>
+    <tr><td class="mono">-E</td><td>从环境变量读密码</td><td>IPMITOOL_PASSWORD 优先于 IPMI_PASSWORD</td></tr>
+    <tr><td class="mono">-f &lt;file&gt;</td><td>从文件第一行读密码</td><td>批量脚本推荐，chmod 600</td></tr>
+    <tr><td class="mono">-L &lt;level&gt;</td><td>会话权限级：CALLBACK/USER/OPERATOR/ADMINISTRATOR</td><td>默认 ADMINISTRATOR</td></tr>
+    <tr><td class="mono">-A &lt;type&gt;</td><td>lan(1.5) 认证类型：NONE/PASSWORD/MD2/MD5/OEM</td><td>仅 -I lan 有效</td></tr>
+    <tr><td class="mono">-C &lt;suite&gt;</td><td>lanplus 加密套件号 0~17</td><td>常用 3（SHA1+AES）；高安全用 17（SHA256）</td></tr>
+    <tr><td class="mono">-v / -vv / -vvv</td><td>递增详细输出（调试报文）</td><td>排错神器</td></tr>
+    <tr><td class="mono">-N &lt;sec&gt;</td><td>命令超时秒数</td><td>默认 2 秒，慢网络加大</td></tr>
+    <tr><td class="mono">-R &lt;count&gt;</td><td>重试次数</td><td>默认 4</td></tr>
+    <tr><td class="mono">-S &lt;file&gt;</td><td>使用/创建 SDR 缓存文件</td><td>加速 sdr/sensor 批量采集</td></tr>
+    <tr><td class="mono">-e &lt;char&gt;</td><td>SOL 转义字符</td><td>默认 ~</td></tr>
+    <tr><td class="mono">-o &lt;oemtype&gt;</td><td>选择 OEM 平台类型</td><td><code>-o list</code> 查看</td></tr>
+    <tr><td class="mono">-k &lt;kgkey&gt; / -y &lt;hex&gt; / -Y</td><td>RMCP+ KG 密钥（明文/十六进制/交互）</td><td>绝大多数场景不用</td></tr>
+    <tr><td class="mono">-t / -T / -b / -B / -m / -l</td><td>IPMB 桥接寻址（target/transit 地址与通道）</td><td>经 BMC 管下游控制器时用</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 19 实战脚本 ==================== -->
+<section id="s19">
+  <h2><span class="num">19</span>实战脚本集</h2>
+
+  <h3>19.1 批量电源状态巡检</h3>
+<pre><span class="cm">#!/bin/bash
+# power_check.sh —— 批量查询 BMC 电源状态，密码从文件读取</span>
+PASS=/root/.ipmi-pass          <span class="cm"># chmod 600，内容就一行密码</span>
+USER=admin
+while read -r HOST; do
+  OUT=$(ipmitool -I lanplus -H "$HOST" -U $USER -f $PASS -N 3 -R 1 power status 2>&1)
+  if echo "$OUT" | grep -q "Chassis Power is on"; then
+    echo -e "$HOST \t → <span class="cg">ON</span>"
+  elif echo "$OUT" | grep -q "Chassis Power is off"; then
+    echo -e "$HOST \t → <span class="cy">OFF</span>"
+  else
+    echo -e "$HOST \t → <span class="cr">UNREACHABLE: $OUT</span>"
+  fi
+done < /root/bmc-hosts.txt</pre>
+
+  <h3>19.2 温度巡检 + 超阈值告警</h3>
+<pre><span class="cm">#!/bin/bash
+# temp_check.sh —— 采集 CPU 温度，超 80°C 告警（配合 SDR 缓存加速）</span>
+THRESH=80
+HOST=192.168.10.68
+ipmitool -I lanplus -H $HOST -U admin -f /root/.ipmi-pass -S /tmp/sdr-$HOST.dat \
+  sdr type Temperature 2>/dev/null | while IFS='|' read -r name val stat; do
+  read -r num unit <<< "$val"
+  if [[ "$unit" == "degrees" && "${num%%.*}" -ge $THRESH ]]; then
+    echo "ALERT → $HOST $name = $num°C ≥ ${THRESH}°C" | \
+      mail -s "[IPMI] 高温告警 $HOST" ops@example.com
+  fi
+done</pre>
+
+  <h3>19.3 无人值守重装系统</h3>
+<pre><span class="cm">#!/bin/bash
+# reinstall.sh —— PXE 重装标准流程</span>
+IPMI="ipmitool -I lanplus -H $1 -U admin -f /root/.ipmi-pass"
+$IPMI chassis bootdev pxe            <span class="cm"># 1. 设定下次 PXE</span>
+$IPMI power status | grep -q "is on" && $IPMI power cycle || $IPMI power on   <span class="cm"># 2. 重启</span>
+sleep 5
+$IPMI sol activate                   <span class="cm"># 3. 接管串口盯进度（退出按 ~.）</span></pre>
+
+  <h3>19.4 批量资产采集（FRU + 功耗）</h3>
+<pre><span class="cm">#!/bin/bash
+# asset_collect.sh —— 生成 CSV：IP,厂商,型号,SN,BMC固件,实时功率</span>
+echo "IP,Vendor,Model,Serial,BMC_FW,Power_W" > assets.csv
+while read -r HOST; do
+  I="ipmitool -I lanplus -H $HOST -U admin -f /root/.ipmi-pass -N 3 -R 1"
+  VENDOR=$($I fru print 0 2>/dev/null | awk -F': ' '/Product Manufacturer/{print $2;exit}')
+  MODEL=$($I fru print 0 2>/dev/null | awk -F': ' '/Product Name/{print $2;exit}')
+  SN=$($I fru print 0 2>/dev/null | awk -F': ' '/Product Serial/{print $2;exit}')
+  FW=$($I bmc info 2>/dev/null | awk -F': ' '/Firmware Revision/{print $2;exit}')
+  PWR=$($I dcmi power reading 2>/dev/null | awk -F': ' '/Instantaneous/{gsub(/ Watts/,"",$2);print $2;exit}')
+  echo "$HOST,$VENDOR,$MODEL,$SN,$FW,$PWR" >> assets.csv
+done < /root/bmc-hosts.txt</pre>
+
+  <h3>19.5 接入监控系统</h3>
+  <table>
+    <tr><th>方案</th><th>说明</th></tr>
+    <tr><td><b>Prometheus</b></td><td><code>ipmi_exporter</code>（soundcloud/ipmi_exporter）：BMC 地址写进 exporter 配置即可批量抓取 sensor/SEL/dcmi 指标，Grafana 有现成面板（ID 13105 等）</td></tr>
+    <tr><td><b>Zabbix</b></td><td>内置 IPMI agent，模板 "Template IPMI / IPMI by Zabbix agent"，填 BMC IP 与凭据即可</td></tr>
+    <tr><td><b>libvirt/虚拟化</b></td><td>libvirt 支持 IPMI 电源驱动，宿主机失联时经 BMC fence（STONITH）保障集群脑裂安全</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 20 故障排查 ==================== -->
+<section id="s20">
+  <h2><span class="num">20</span>故障排查与踩坑</h2>
+
+  <h3>20.1 常见报错对照</h3>
+  <table>
+    <tr><th style="width:44%">报错信息</th><th>原因 → 处理</th></tr>
+    <tr><td class="mono">Could not open device at /dev/ipmi0 or /dev/ipmi/0: No such file</td><td>本地驱动未加载 <span class="wn">→</span> <code>modprobe ipmi_devintf ipmi_si</code>；虚拟机无 BMC 属正常</td></tr>
+    <tr><td class="mono">Unable to establish LAN session</td><td>网络不通 <span class="wn">→</span> ping BMC IP <span class="wn">→</span> 查 UDP 623 是否被防火墙拦 <span class="wn">→</span> 确认 lan print 中的 IP 未变</td></tr>
+    <tr><td class="mono">Unable to establish IPMI v2 / RMCP+ session</td><td>用户名/密码错 <span class="wn">→</span> 用户权限不足 <span class="wn">→</span> 加密套件不匹配（试 <code>-C 3</code>/<code>-C 17</code>）<span class="wn">→</span> 账户被锁定（等待 User Lockout Interval 或本地改密）</td></tr>
+    <tr><td class="mono">Get Auth Capabilities error</td><td>BMC 固件 bug 或对端不是 IPMI 服务 <span class="wn">→</span> 确认端口 623 上是 BMC 而非其他服务</td></tr>
+    <tr><td class="mono">Error loading interface lanplus</td><td>发行版的 ipmitool 编译时裁掉了该接口 <span class="wn">→</span> 装完整包或源码编译</td></tr>
+    <tr><td class="mono">Authentication type NONE not supported</td><td>BMC 禁用了 NONE 认证 <span class="wn">→</span> 正常提供 -U/-P 即可</td></tr>
+    <tr><td class="mono">Insufficient privilege level</td><td>当前用户权限不够执行该命令 <span class="wn">→</span> 换 ADMIN 用户或 <code>user priv</code> 提权</td></tr>
+    <tr><td class="mono">SOL 连上但黑屏无输出</td><td>串口选错（ttyS0/ttyS1）<span class="wn">→</span> 波特率两端不一致 <span class="wn">→</span> BIOS 串口重定向未开 <span class="wn">→</span> 先按回车唤醒 getty</td></tr>
+    <tr><td class="mono">sensor 读数全 na / no reading</td><td>BMC 与传感器通信异常 <span class="wn">→</span> <code>mc reset cold</code> <span class="wn">→</span> 整机断电 60s <span class="wn">→</span> 怀疑主板硬件</td></tr>
+    <tr><td class="mono">LAN session timeout 偶发</td><td>BMC 负载高或网络抖动 <span class="wn">→</span> 加大 <code>-N 10 -R 3</code>；批量脚本串行执行避免并发打爆 BMC</td></tr>
+  </table>
+
+  <h3>20.2 分级排错流程</h3>
+<pre><span class="cm"># 第 1 层：本地链路</span>
+<span class="ck">ls /dev/ipmi0 && ipmitool bmc info</span>            <span class="co">→ </span><span class="cg">通：本机链路 OK</span><span class="co"> / </span><span class="cr">不通：查驱动与 BIOS 开关</span>
+
+<span class="cm"># 第 2 层：网络可达性</span>
+<span class="ck">ping &lt;BMC_IP&gt; && nc -uvz &lt;BMC_IP&gt; 623</span>         <span class="co">→ UDP 623 可达性（nc 对 UDP 仅供参考）</span>
+
+<span class="cm"># 第 3 层：协议握手（开调试看细节）</span>
+<span class="ck">ipmitool -vvv -I lanplus -H &lt;BMC_IP&gt; -U admin -a bmc info</span>
+<span class="co">→ -vvv 会打印完整 RMCP+ 握手过程，卡在哪一步一目了然</span>
+
+<span class="cm"># 第 4 层：BMC 自救</span>
+<span class="ck">ipmitool mc reset cold</span>                        <span class="co">→ 等待 90 秒后重连</span>
+<span class="cm"># 仍无效 → 整机交流断电 60 秒（放掉 Vaux 待机电源）→ 再上电</span></pre>
+
+  <h3>20.3 实战踩坑记录</h3>
+  <div class="exp"><b>坑 1 · 批量脚本把 BMC 打挂：</b>50 台机器并发 <code>sdr</code> 全量拉取，低端 BMC 直接会话耗尽 <span class="wn">→</span> 解决：串行执行 + <code>-S sdr缓存</code> + <code>-N 5 -R 2</code>，或改用 ipmi_exporter 的慢轮询。</div>
+  <div class="exp"><b>坑 2 · power off 不等于冷断电：</b>排查网卡/BMC 固件级故障时，<code>power off</code> 后 Vaux 仍供电，固件状态被"冻存" <span class="wn">→</span> 必须拔电源线/PDU 断口 60 秒以上才算真正冷启动。</div>
+  <div class="exp"><b>坑 3 · 账户被自己锁死：</b>监控脚本里密码写错后高频重试，触发 Bad Password Threshold（默认 3 次锁 600 秒），连正确密码都进不去 <span class="wn">→</span> 等待锁定期过，或在本机用 open 接口 <code>user set password</code> 重置。</div>
+  <div class="exp"><b>坑 4 · SOL 中文乱码：</b>OS 控制台输出 UTF-8 中文经 SOL 到终端出现方块 <span class="wn">→</span> 把 BIOS 串口重定向终端类型设为 VT-UTF8，终端模拟器也设为 UTF-8；grub 阶段保持英文菜单最稳。</div>
+  <div class="exp"><b>坑 5 · DHCP 模式下 IP 漂移：</b>BMC 默认 DHCP，机房交换机重启后拿到新 IP，管理端失联 <span class="wn">→</span> 装机时一律改静态，或在 DHCP 服务器上绑 MAC 固定分配。</div>
+</section>
+
+<!-- ==================== 21 安全 ==================== -->
+<section id="s21">
+  <h2><span class="num">21</span>安全加固建议</h2>
+  <p>IPMI 历史上出过多次严重漏洞（cipher 0 绕过、明文哈希泄露等），BMC 一旦被控等于物理接触服务器，<b>必须当作高价值目标加固</b>：</p>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:var(--green)">必做项</h4>
+      <ul class="arrow" style="font-size:13.5px">
+        <li>管理网与业务网<b>物理/VLAN 隔离</b>，623 端口不对业务网开放</li>
+        <li>修改全部默认口令（ADMIN/ADMIN、root/calvin 等）</li>
+        <li>禁用匿名账户：<code>user list 1</code> 查 ID1，空名即匿名</li>
+        <li>SNMP 团体名改掉 public：<code>lan set 1 snmp</code></li>
+        <li>远程只用 <code>-I lanplus</code>，禁用弱套件，优先 <code>-C 17</code></li>
+        <li>最小权限：监控账户给 USER(2)，不给 ADMIN</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--yellow)">建议项</h4>
+      <ul class="arrow" style="font-size:13.5px">
+        <li>BMC 固件保持更新（厂商安全公告要跟进）</li>
+        <li>交换机侧 ACL 限制 623 端口源地址为运维跳板机</li>
+        <li>凭据不进脚本/命令行，统一用 <code>-f</code> 密码文件 + 权限 600</li>
+        <li>定期 <code>session info all</code> 审计活动会话</li>
+        <li>新平台优先考虑 Redfish（HTTPS+JSON）替代 IPMI over LAN</li>
+        <li>不用 SOL 时 <code>sol set enabled false 1</code> 关闭面</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 22 速查表 ==================== -->
+<section id="s22">
+  <h2><span class="num">22</span>一页速查表</h2>
+  <table>
+    <tr><th style="width:150px">分类</th><th>命令</th><th>说明</th></tr>
+    <tr><td rowspan="4"><b>连接</b></td><td class="mono">ipmitool &lt;cmd&gt;</td><td>本机（需 /dev/ipmi0）</td></tr>
+    <tr><td class="mono">ipmitool -I lanplus -H IP -U u -f pw &lt;cmd&gt;</td><td>远程（推荐姿势）</td></tr>
+    <tr><td class="mono">-C 3 / -C 17</td><td>加密套件：兼容 / 高安全</td></tr>
+    <tr><td class="mono">-vvv</td><td>调试模式看握手细节</td></tr>
+    <tr><td rowspan="4"><b>电源</b></td><td class="mono">power status / on / off / cycle / reset / soft / diag</td><td>查/开/强关/冷重启/硬复位/软关/NMI</td></tr>
+    <tr><td class="mono">chassis policy always-on</td><td>来电自启</td></tr>
+    <tr><td class="mono">chassis bootdev pxe [options=persistent]</td><td>下次 PXE 启动</td></tr>
+    <tr><td class="mono">chassis identify 15</td><td>定位灯闪 15 秒</td></tr>
+    <tr><td rowspan="4"><b>监控</b></td><td class="mono">sdr elist / sdr type Temperature</td><td>全部传感器 / 按类型</td></tr>
+    <tr><td class="mono">sensor get "名称"</td><td>单传感器详情+阈值</td></tr>
+    <tr><td class="mono">sel elist / sel list last 20</td><td>事件日志 / 最近 20 条</td></tr>
+    <tr><td class="mono">dcmi power reading</td><td>整机实时功率</td></tr>
+    <tr><td rowspan="4"><b>信息</b></td><td class="mono">bmc info</td><td>BMC 固件版本等</td></tr>
+    <tr><td class="mono">fru print</td><td>厂商/型号/序列号</td></tr>
+    <tr><td class="mono">lan print [1]</td><td>BMC 网络配置</td></tr>
+    <tr><td class="mono">user list 1</td><td>用户表（查匿名账户）</td></tr>
+    <tr><td rowspan="4"><b>配置</b></td><td class="mono">lan set 1 ipsrc static + ipaddr/netmask/defgw</td><td>静态 IP 四连</td></tr>
+    <tr><td class="mono">user set name/password/priv + enable</td><td>建用户四连</td></tr>
+    <tr><td class="mono">sel save → sel clear</td><td>日志备份后清空</td></tr>
+    <tr><td class="mono">mc reset cold</td><td>重启 BMC（不影响业务）</td></tr>
+    <tr><td rowspan="3"><b>远程运维</b></td><td class="mono">sol activate</td><td>串口控制台（退出 <code>~.</code>）</td></tr>
+    <tr><td class="mono">hpm check → hpm upgrade</td><td>BMC 固件升级</td></tr>
+    <tr><td class="mono">sdr dump f + -S f</td><td>SDR 缓存加速批量采集</td></tr>
+  </table>
+
+  <div class="card" style="margin-top:24px">
+    <h4 style="color:var(--cyan);margin-top:0">运维黄金三连（记住这三条就够应付 80% 场景）</h4>
+<pre style="margin:8px 0 0"><span class="ck">ipmitool -I lanplus -H &lt;BMC&gt; -U &lt;user&gt; -f passfile power status</span>   <span class="cm"># 它在不在</span>
+<span class="ck">ipmitool -I lanplus -H &lt;BMC&gt; -U &lt;user&gt; -f passfile sdr elist</span>      <span class="cm"># 它好不好</span>
+<span class="ck">ipmitool -I lanplus -H &lt;BMC&gt; -U &lt;user&gt; -f passfile sel elist</span>      <span class="cm"># 它出过什么事</span></pre>
+  </div>
+</section>
+
+<footer>
+  <p>ipmitool 完全使用手册 · 单文件 HTML，无外部依赖 · 生成于 2026-10-26</p>
+  <p style="margin-top:6px">参考：IPMI v2.0 Specification / ipmitool 1.8.19 man page / 生产环境运维经验</p>
+</footer>
+
+</main>
+</body>
+</html>
+

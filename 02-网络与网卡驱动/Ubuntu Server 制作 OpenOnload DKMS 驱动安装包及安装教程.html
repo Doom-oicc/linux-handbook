@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ubuntu Server 制作 OpenOnload DKMS 驱动安装包及安装教程</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d28;
+    --surface-2: #232735;
+    --border: #2e3344;
+    --text: #e0e0e0;
+    --text-dim: #8b8fa3;
+    --accent: #00b4d8;
+    --accent-2: #0077b6;
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --red: #e74c3c;
+    --code-bg: #0a0c12;
+    --step-card: #1a1d28;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0a0c12 0%, #1a1d28 50%, #0a1e2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 40px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 2.2rem;
+    background: linear-gradient(90deg, var(--accent), #48cae4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 1.05rem;
+  }
+  .header .meta-tags {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .tag-os { background: rgba(0,180,216,0.15); color: var(--accent); border: 1px solid rgba(0,180,216,0.3); }
+  .tag-ver { background: rgba(46,204,113,0.15); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
+  .tag-arch { background: rgba(241,196,15,0.15); color: var(--yellow); border: 1px solid rgba(241,196,15,0.3); }
+
+  /* Container */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Overview */
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+  }
+  .overview h2 {
+    font-size: 1.15rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .overview h2::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .overview ul {
+    list-style: none;
+    padding: 0;
+  }
+  .overview li {
+    padding: 6px 0;
+    color: var(--text-dim);
+    font-size: 0.92rem;
+  }
+  .overview li strong {
+    color: var(--text);
+  }
+
+  /* Step flow */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .step:hover {
+    border-left-color: #48cae4;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .step-body {
+    padding: 0 24px 20px 80px;
+  }
+  .step-desc {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+  }
+
+  /* Terminal block */
+  .terminal {
+    background: var(--code-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .terminal-bar {
+    background: #1a1d28;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #e74c3c; }
+  .dot-yellow { background: #f1c40f; }
+  .dot-green { background: #2ecc71; }
+  .terminal-label {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-left: 8px;
+  }
+  .terminal-content {
+    padding: 14px 18px;
+    overflow-x: auto;
+  }
+  .terminal-content pre {
+    font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    font-size: 0.86rem;
+    line-height: 1.8;
+    white-space: pre;
+  }
+  .cmd-prompt { color: var(--green); font-weight: 600; }
+  .cmd-input { color: #e0e0e0; }
+  .cmd-comment { color: var(--text-dim); }
+  .cmd-output { color: #6b7280; }
+  .cmd-success { color: var(--green); }
+  .cmd-warn { color: var(--yellow); }
+  .cmd-key { color: var(--accent); }
+
+  /* Note box */
+  .note {
+    background: rgba(0,180,216,0.06);
+    border: 1px solid rgba(0,180,216,0.2);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .note-icon {
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .note.warn {
+    background: rgba(241,196,15,0.06);
+    border-color: rgba(241,196,15,0.2);
+  }
+  .note.warn .note-icon { color: var(--yellow); }
+
+  /* Package table */
+  .pkg-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 0.85rem;
+  }
+  .pkg-table th {
+    background: var(--surface-2);
+    color: var(--accent);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }
+  .pkg-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .pkg-table td:first-child {
+    color: var(--text);
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+  }
+  .pkg-table tr:last-child td {
+    border-bottom: none;
+  }
+  .size-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    background: rgba(0,180,216,0.1);
+    color: var(--accent);
+  }
+
+  /* DKMS status */
+  .dkms-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-top: 12px;
+    overflow-x: auto;
+  }
+  .dkms-block pre {
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.9;
+    color: var(--text-dim);
+  }
+  .dkms-highlight { color: var(--green); font-weight: 600; }
+
+  /* Flow diagram */
+  .flow-diagram {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 0 auto 48px;
+    padding: 24px 0;
+  }
+  .flow-item {
+    text-align: center;
+    position: relative;
+    flex: 1;
+    min-width: 100px;
+    max-width: 130px;
+  }
+  .flow-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    border: 2px solid var(--accent);
+    background: rgba(0,180,216,0.08);
+    color: var(--accent);
+  }
+  .flow-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--border);
+    font-size: 1.2rem;
+    padding-top: 18px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .header h1 { font-size: 1.6rem; }
+    .step-body { padding: 0 20px 20px 20px; }
+    .step-header { padding: 16px 20px; }
+    .flow-arrow { display: none; }
+    .flow-item { max-width: 45%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>Ubuntu Server 制作 OpenOnload DKMS 驱动安装包及安装教程</h1>
+  <p class="subtitle">Ubuntu 22.04 Server 系统制作 onload DKMS 驱动安装包并安装指南</p>
+  <div class="meta-tags">
+    <span class="tag tag-os">Ubuntu 22.04 LTS (Jammy)</span>
+    <span class="tag tag-ver">OpenOnload 9.1.0.24</span>
+    <span class="tag tag-arch">x86_64</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Overview -->
+  <div class="overview">
+    <h2>教程概述</h2>
+    <ul>
+      <li>● 本教程介绍如何在 <strong>Ubuntu 22.04 Server</strong> 系统上，从 Debian 源码包制作 <strong>onload DKMS 驱动安装包（.deb）</strong>，并完成安装。</li>
+      <li>● <strong>OpenOnload</strong> 是 AMD Solarflare 网卡的用户态网络加速框架，通过内核旁路技术实现超高吞吐和低延迟网络通信。</li>
+      <li>● 源码包：<strong>onload_9.1.0.24-debiansource.tgz</strong>，版本 <strong>9.1.0.24-1</strong>，适用于 amd64 架构。</li>
+      <li>● 全程需要 <strong>root/sudo 权限</strong>，安装完成后通过 DKMS 实现内核模块的自动管理。</li>
+      <li>● 当前系统内核：<strong>6.8.0-138-generic</strong>（同时兼容 5.15.0-191 / 6.2.0-39）。</li>
+    </ul>
+  </div>
+
+  <!-- Flow Diagram -->
+  <div class="flow-diagram">
+    <div class="flow-item">
+      <div class="flow-circle">1</div>
+      <div class="flow-label">解压<br>源码包</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">2</div>
+      <div class="flow-label">展开<br>Debian 源码</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">3</div>
+      <div class="flow-label">安装<br>编译依赖</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">4</div>
+      <div class="flow-label">制作<br>DEB 安装包</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">5</div>
+      <div class="flow-label">查看<br>制作产物</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">6</div>
+      <div class="flow-label">安装<br>用户态包</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">7</div>
+      <div class="flow-label">安装<br>DKMS 包</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-circle">8</div>
+      <div class="flow-label">验证<br>安装状态</div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">解压源码包</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">将下载的 Debian 源码压缩包解压到当前工作目录，释放出构建所需的 .dsc、.tar.xz 和 .orig.tar.gz 文件。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 解压源码</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">tar -xvf onload_9.1.0.24-debiansource.tgz</span>
+<span class="cmd-output">./onload_9.1.0.24-1.debian.tar.xz
+./onload_9.1.0.24.orig.tar.gz
+./onload_9.1.0.24-1.dsc</span>
+
+<span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">ls</span>
+<span class="cmd-output">AweSun       Desktop    gpu-burn.zip         onload_9.1.0.24-1.dsc             snap             yc.sh
+check_V5.sh  Downloads  mount_V6.sh          onload_9.1.0.24-debiansource.tgz  Templates
+deb          gpu-burn   onload_9.1.0.24-1.debian.tar.xz  onload_9.1.0.24.orig.tar.gz  upload_check.sh</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>解压后会生成三个文件：.dsc（Debian源码描述文件）、.orig.tar.gz（原始源码）、.debian.tar.xz（Debian补丁与打包脚本）。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">展开 Debian 源码目录</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">使用 dpkg-source 工具根据 .dsc 描述文件自动展开源码目录，生成完整的构建树 onload-9.1.0.24/。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 展开源码</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">sudo dpkg-source -x onload_9.1.0.24-1.dsc</span>
+<span class="cmd-warn">dpkg-source: warning: extracting unsigned source package (onload_9.1.0.24-1.dsc)</span>
+<span class="cmd-output">dpkg-source: info: extracting onload in onload-9.1.0.24
+dpkg-source: info: unpacking onload_9.1.0.24.orig.tar.gz
+dpkg-source: info: unpacking onload_9.1.0.24-1.debian.tar.xz</span>
+
+<span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">cd onload-9.1.0.24/</span>
+<span class="cmd-prompt">ps@TestOS:~/onload-9.1.0.24$</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>warning 提示源码包未签名，属于正常现象，不影响编译和安装。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">安装编译依赖</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">使用 apt build-dep 命令自动读取 debian/control 中的依赖声明，安装全部编译所需工具链（约 20 个包，30.9 MB）。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 安装依赖</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~/onload-9.1.0.24$</span> <span class="cmd-input">sudo apt build-dep ./</span>
+<span class="cmd-output">Note, using directory './' to get the build dependencies
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following NEW packages will be installed:
+  autopoint debhelper debugedit dh-autoreconf dh-strip-nondeterminism dwz gawk gettext intltool-debian
+  libarchive-zip-perl libdebhelper-perl libfile-stripnondeterminism-perl libjs-sphinxdoc libpython3-dev
+  libpython3.10-dev libsub-override-perl po-debconf python3-dev python3-distutils python3.10-dev
+0 upgraded, 20 newly installed, 0 to remove and 1 not upgraded.
+Need to get 8,860 kB of archives.
+After this operation, 30.9 MB of additional disk space will be used.
+Do you want to continue? [Y/n] <span class="cmd-key">y</span></span>
+
+<span class="cmd-output">Fetched 8,860 kB in 6s (1,484 kB/s)
+...
+Setting up debhelper (13.6ubuntu1) ...
+Processing triggers for man-db (2.10.2-1) ...</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>关键依赖包：debhelper（Debian打包工具）、python3-dev（Python开发头文件）、gawk（文本处理）等。确保 apt 源已配置国内镜像以加速下载。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-title">制作 DEB 安装包</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">在源码目录中使用 dpkg-buildpackage 执行完整编译，制作 .deb 二进制安装包。编译过程包括内核模块和用户态库。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 制作安装包</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~/onload-9.1.0.24$</span> <span class="cmd-input">sudo dpkg-buildpackage -us -uc -b</span>
+<span class="cmd-output">dpkg-buildpackage: info: source package onload
+dpkg-buildpackage: info: source version 9.1.0.24-1
+dpkg-buildpackage: info: source distribution unstable
+dpkg-buildpackage: info: source changed by AMD Solarflare NIC Support &lt;support-nic@amd.com&gt;
+dpkg-buildpackage: info: host architecture amd64
+
+  debian/rules clean
+  debian/rules build
+  scripts/onload_build  --user
+  Build tree made for gnu_x86_64 as gnu_x86_64
+  ...</span>
+
+<span class="cmd-success">onload_install: Install complete.</span>
+
+<span class="cmd-output">dh_builddeb -a
+dpkg-deb: building package 'onload-user' in '../onload-user_9.1.0.24-1_amd64.deb'.
+dpkg-buildpackage: info: binary-only upload (no source included)</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>参数说明：<strong>-us</strong> 不签名源码包，<strong>-uc</strong> 不签名变更文件，<strong>-b</strong> 仅构建二进制包。编译完成后在上级目录生成 .deb 文件。</span>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>编译可能需要数分钟，取决于 CPU 性能。如遇到缺少头文件错误，请确认已安装对应内核的 linux-headers 包。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-title">查看制作产物</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">返回上级目录，查看制作生成的全部 .deb 安装包及其大小。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 查看产物</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~/onload-9.1.0.24$</span> <span class="cmd-input">cd ..</span>
+<span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">ll *.deb</span>
+<span class="cmd-output">-rw-r--r-- 1 root root  557548  9月  8 14:40 onload-dev_9.1.0.24-1_all.deb
+-rw-r--r-- 1 root root 2571078  9月  8 14:40 onload-dkms_9.1.0.24-1_all.deb
+-rw-r--r-- 1 root root  130508  9月  8 14:40 onload-examples_9.1.0.24-1_all.deb
+-rw-r--r-- 1 root root 2819548  9月  8 14:40 onload-source_9.1.0.24-1_all.deb
+-rw-r--r-- 1 root root 8876100  9月  8 14:40 onload-user_9.1.0.24-1_amd64.deb</span></pre>
+          </div>
+        </div>
+        <table class="pkg-table">
+          <thead>
+            <tr>
+              <th>包名</th>
+              <th>说明</th>
+              <th>大小</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>onload-user</td>
+              <td>用户态运行库（核心必装）</td>
+              <td><span class="size-badge">8.5 MB</span></td>
+            </tr>
+            <tr>
+              <td>onload-dkms</td>
+              <td>内核模块 DKMS 包（核心必装）</td>
+              <td><span class="size-badge">2.5 MB</span></td>
+            </tr>
+            <tr>
+              <td>onload-dev</td>
+              <td>开发头文件与静态库</td>
+              <td><span class="size-badge">544 KB</span></td>
+            </tr>
+            <tr>
+              <td>onload-source</td>
+              <td>源码包（归档参考）</td>
+              <td><span class="size-badge">2.7 MB</span></td>
+            </tr>
+            <tr>
+              <td>onload-examples</td>
+              <td>示例程序</td>
+              <td><span class="size-badge">127 KB</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div class="step-title">安装用户态包 (onload-user)</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">安装用户态运行库，包含 onload 控制平面守护进程和用户态 API 库。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 安装 onload-user</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">sudo apt install ./onload-user_9.1.0.24-1_amd64.deb</span>
+<span class="cmd-output">Note, selecting 'onload-user' instead of './onload-user_9.1.0.24-1_amd64.deb'
+The following NEW packages will be installed:
+  onload-user
+0 upgraded, 1 newly installed, 0 to remove and 1 not upgraded.
+After this operation, 84.0 kB of additional disk space will be used.
+
+Selecting previously unselected package onload-user.
+Unpacking onload-user (9.1.0.24-1) ...
+Setting up onload-user (9.1.0.24-1) ...
+Creating group onload_cplane with gid 998.
+Creating user onload_cplane (Onload Control Plane) with uid 998 and gid 998.</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>安装时会自动创建 <strong>onload_cplane</strong> 系统用户和用户组（uid/gid 998），用于运行 Onload 控制平面守护进程。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div class="step-title">安装内核模块包 (onload-dkms)</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">安装 DKMS 内核模块包，自动为当前内核编译并加载 sfc、sfc_char、sfc_resource、onload 四个内核模块。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 安装 onload-dkms</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">sudo apt install ./onload-dkms_9.1.0.24-1_all.deb</span>
+<span class="cmd-output">Note, selecting 'onload-dkms' instead of './onload-dkms_9.1.0.24-1_all.deb'
+The following NEW packages will be installed:
+  onload-dkms
+
+Setting up onload-dkms (9.1.0.24-1) ...
+Creating symlink /var/lib/dkms/onload/9.1.0.24/source -> /usr/src/onload-9.1.0.24
+Sign command: /usr/bin/kmodsign
+Signing key: /var/lib/shim-signed/mok/MOK.priv
+Public certificate (MOK): /var/lib/shim-signed/mok/MOK.der</span>
+
+<span class="cmd-success">Building module(s)................................................ done.</span>
+<span class="cmd-output">Signing module .../sfc.ko
+Signing module .../sfc_char.ko
+Signing module .../sfc_resource.ko
+Signing module .../onload.ko
+
+Installing /lib/modules/6.8.0-138-generic/updates/dkms/sfc.ko
+Installing /lib/modules/6.8.0-138-generic/updates/dkms/sfc_char.ko
+Installing /lib/modules/6.8.0-138-generic/updates/dkms/sfc_resource.ko
+Installing /lib/modules/6.8.0-138-generic/updates/dkms/onload.ko
+
+Running depmod... done.</span></pre>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>DKMS 会自动检测已有同名模块并归档（Found pre-existing ... archiving for uninstallation），新模块安装到 <strong>updates/dkms/</strong> 目录优先加载。</span>
+        </div>
+        <div class="note warn">
+          <span class="note-icon">!</span>
+          <span>如系统使用了 Secure Boot，需确保 MOK 密钥已导入 BIOS，否则内核模块加载会失败。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">8</div>
+        <div class="step-title">验证安装状态</div>
+      </div>
+      <div class="step-body">
+        <p class="step-desc">通过 dkms status 命令查看所有内核模块的编译安装状态，确认 onload 模块在目标内核上已成功安装。</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+            <span class="terminal-label">Terminal — 验证 DKMS 状态</span>
+          </div>
+          <div class="terminal-content">
+<pre><span class="cmd-prompt">ps@TestOS:~$</span> <span class="cmd-input">sudo dkms status</span></pre>
+          </div>
+        </div>
+        <div class="dkms-block">
+<pre>iser/2607.0.100-1, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+iser/2607.0.100-1, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+iser/2607.0.100-1, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+isert/2607.0.100-1, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+isert/2607.0.100-1, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+isert/2607.0.100-1, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+kernel-mft-dkms/4.37.0, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span>
+kernel-mft-dkms/4.37.0, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span>
+kernel-mft-dkms/4.37.0, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+mlnx-ofed-kernel/2607.0.100-1, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+mlnx-ofed-kernel/2607.0.100-1, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+mlnx-ofed-kernel/2607.0.100-1, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+nvidia/595.80, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span>
+nvidia/595.80, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span>
+nvidia/595.80, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+<span style="background: rgba(0,180,216,0.1); padding: 2px 4px; border-radius: 3px;">onload/9.1.0.24, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)</span>
+realtek-r8125/9.016.01, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span>
+realtek-r8125/9.016.01, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span>
+realtek-r8125/9.016.01, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+srp/2607.0.100-1, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+srp/2607.0.100-1, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span> (Original modules exist)
+srp/2607.0.100-1, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+sysdig/0.27.1, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span>
+sysdig/0.27.1, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span>
+sysdig/0.27.1, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span>
+xpmem/2607.0.7, 5.15.0-191-generic, x86_64: <span class="dkms-highlight">installed</span>
+xpmem/2607.0.7, 6.2.0-39-generic, x86_64: <span class="dkms-highlight">installed</span>
+xpmem/2607.0.7, 6.8.0-138-generic, x86_64: <span class="dkms-highlight">installed</span></pre>
+        </div>
+        <div class="note">
+          <span class="note-icon">i</span>
+          <span>高亮行 <strong>onload/9.1.0.24, 6.8.0-138-generic, x86_64: installed</strong> 即为本次安装结果。状态显示 "installed" 表示编译并安装成功。"Original modules exist" 表示系统自带同名模块已被归档，DKMS 版本优先加载。</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="overview" style="margin-top: 40px; border-left: 4px solid var(--green);">
+    <h2 style="color: var(--green);">安装总结</h2>
+    <ul>
+      <li>● 安装完成后，系统将拥有 <strong>onload-user</strong>（用户态库）和 <strong>onload-dkms</strong>（内核模块）两套组件。</li>
+      <li>● 内核模块 <strong>sfc.ko / sfc_char.ko / sfc_resource.ko / onload.ko</strong> 已编译签名并安装至 <code>/lib/modules/$(uname -r)/updates/dkms/</code>。</li>
+      <li>● DKMS 会在后续内核更新时自动重新编译模块，无需手动干预。</li>
+      <li>● 可使用 <code>onload_toolload</code> 或 <code>ef_named_cpool_test</code> 等工具验证功能正常性。</li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Ubuntu Server 制作 OpenOnload DKMS 驱动安装包及安装教程 | OpenOnload 9.1.0.24 | AMD Solarflare NIC</p>
+</div>
+
+</body>
+</html>

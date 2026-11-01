@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>网卡安装教程 · 系统测试工程师</title>
+<style>
+:root {
+  --bg: #eefaf5; --bg-2: #f6fcf9; --surface: #ffffff;
+  --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+  --accent: #10b981; --accent-dark: #065f46; --accent-soft: #d7f5e6;
+  --border: rgba(0,0,0,.06);
+  --code-bg: #ffffff; --code-text: #000000;
+  --comment: #8a94a0; --keyword: #0f766e;
+  --shadow: 0 4px 24px rgba(0,0,0,.04), 0 16px 48px rgba(0,0,0,.06);
+  --radius: 24px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; display: flex; min-height: 100vh;
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 17px;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 50%, #fff 100%);
+  color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased;
+}
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 300px; height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f0faf4 100%);
+  border-right: 1px solid rgba(4,120,87,.14);
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; z-index: 100;
+}
+.sidebar-brand { padding: 26px 22px 20px; border-bottom: 1px solid rgba(4,120,87,.12); background: rgba(255,255,255,.7); }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 800; color: #065f46; letter-spacing: -.01em; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(16,185,129,.22); }
+.brand-sub { font-size: 13px; color: #4b5563; margin-top: 6px; font-weight: 600; }
+.progress { height: 3px; background: #d7f5e6; margin: 0 22px 14px; border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+.toc-scroll::-webkit-scrollbar { width: 6px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: #c7e6d8; border-radius: 3px; }
+.toc-scroll::-webkit-scrollbar-track { background: transparent; }
+.toc-group { margin-bottom: 16px; }
+.toc-group-title { display: flex; align-items: center; gap: 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #065f46; font-weight: 800; padding: 10px 10px 6px; }
+.toc-group-title::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+.toc-chap { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #1f2937; text-decoration: none; font-size: 14.5px; line-height: 1.45; font-weight: 600; transition: all .15s ease; }
+.toc-chap:hover { background: #eaf7f0; color: #065f46; }
+.toc-chap.active { background: #d7f5e6; color: #04563e; font-weight: 800; box-shadow: inset 3px 0 0 var(--accent); }
+.chap-num { width: 24px; height: 24px; border-radius: 8px; background: #e2f3ea; color: #065f46; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; border: 1px solid rgba(4,120,87,.16); }
+.toc-chap.active .chap-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,210,106,.35); }
+.chap-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toc-sub { display: block; position: relative; padding: 6px 10px 6px 44px; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13.5px; line-height: 1.4; font-weight: 500; transition: all .15s ease; }
+.toc-sub::before { content: ''; position: absolute; left: 30px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: #5ce6ad; }
+.toc-sub:hover { background: #eaf7f0; color: #065f46; }
+.toc-sub.active { background: #d7f5e6; color: #04563e; font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+
+.main { margin-left: 300px; flex: 1; min-width: 0; padding: 50px 60px 120px; }
+.main-inner { max-width: 880px; margin: 0 auto; }
+.page-header { margin-bottom: 40px; }
+.page-header h1 { font-size: 42px; font-weight: 900; letter-spacing: -.04em; margin: 0; color: var(--accent-dark); line-height: 1.1; }
+.page-header .subtitle { color: var(--text-2); font-size: 18px; margin-top: 12px; font-weight: 500; }
+.doc-lead { background: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 24px 30px; box-shadow: 0 4px 24px rgba(0,0,0,.04); color: var(--text-2); font-size: 16px; line-height: 1.75; margin-bottom: 40px; }
+.doc-lead strong { color: var(--accent-dark); }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 40px 46px; box-shadow: var(--shadow); margin-bottom: 34px; transition: transform .25s ease, box-shadow .25s ease; scroll-margin-top: 40px; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06), 0 24px 64px rgba(0,0,0,.08); }
+.card h2 { font-size: 28px; font-weight: 800; margin: 0 0 18px; letter-spacing: -.03em; color: var(--accent-dark); padding-bottom: 14px; border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--accent) 0%, rgba(16,185,129,.22) 70%, transparent 100%) 1; }
+.card h3 { font-size: 21px; font-weight: 700; margin: 26px 0 12px; color: #065f46; display: flex; align-items: center; gap: 10px; }
+.card h3::before { content: ''; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.card h4 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+.card p { margin: 10px 0; color: var(--text-2); font-size: 16px; }
+.card ul, .card ol { margin: 10px 0; padding-left: 24px; color: var(--text-2); font-size: 16px; }
+.card li { margin: 5px 0; }
+.card code:not(.hl) { background: #d7f5e6; color: #065f46; border-radius: 5px; padding: 1px 6px; font-size: 16px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.code-card { border-radius: 12px; overflow: hidden; margin: 14px 0; background: var(--code-bg); border: 1px solid rgba(4,120,87,.14); box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.code-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: #f2faf5; border-bottom: 1px solid rgba(4,120,87,.10); }
+.dots { display: flex; gap: 7px; }
+.dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+.lang { margin-left: 4px; font-size: 13px; color: #065f46; font-weight: 600; letter-spacing: .03em; flex: 1; }
+.copy { background: #ffffff; border: 1px solid rgba(4,120,87,.25); color: #065f46; font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s ease; }
+.copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+.code-card pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+.code-card code { font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; font-size: 15.5px; line-height: 1.7; color: #000000 !important; display: block; }
+.code-card .c { color: #8a94a0 !important; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 12px; border: 1px solid rgba(4,120,87,.12); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: #fff; }
+th { background: #edf9f2; color: #065f46; text-align: left; padding: 10px 14px; font-weight: 700; white-space: nowrap; }
+td { padding: 9px 14px; border-top: 1px solid rgba(4,120,87,.08); color: var(--text-2); }
+td code { background: #d7f5e6; color: #065f46; border-radius: 4px; padding: 0 5px; font-size: 14px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.note { background: #f0faf5; border: 1px solid rgba(4,120,87,.16); border-left: 4px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 14px 0; color: #374151; font-size: 15.5px; line-height: 1.75; }
+.note strong { color: #065f46; }
+.note.warn { background: #fff8ec; border-color: rgba(245,158,11,.3); border-left-color: #f59e0b; color: #78350f; }
+.note.warn strong { color: #b45309; }
+
+.backtop { position: fixed; right: 28px; bottom: 28px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,.45); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 99; }
+  .backtop.show { opacity: 1; pointer-events: auto; }
+  .backtop:hover { transform: translateY(-3px); }
+  #toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px); background: #065f46; color: #fff; padding: 10px 22px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 200; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 30px 20px 80px; }
+  .card { padding: 28px 22px; }
+  .page-header h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand"><span class="brand-dot"></span>网卡安装教程</div>
+    <div class="brand-sub">Solarflare X2522 · Mellanox MLNX_OFED</div>
+  </div>
+  <div class="progress"><div class="progress-bar"></div></div>
+  <nav class="toc-scroll" id="toc"><div class="toc-group"><div class="toc-group-title">Solarflare · CentOS</div><a href="#sec-x2-centos" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">X2522 安装（CentOS 7.9）</span></a><a href="#t1-1" class="toc-sub" data-level="3">安装软件包</a><a href="#t1-2" class="toc-sub" data-level="3">更新网卡固件</a><a href="#t1-3" class="toc-sub" data-level="3">加载并验证 Onload</a></div><div class="toc-group"><div class="toc-group-title">Solarflare · Ubuntu</div><a href="#sec-x2-ubuntu" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">X2522 安装（Ubuntu 22.04）</span></a><a href="#t2-1" class="toc-sub" data-level="3">安装软件包</a><a href="#t2-2" class="toc-sub" data-level="3">更新网卡固件</a><a href="#t2-3" class="toc-sub" data-level="3">加载并验证 Onload</a><a href="#t2-4" class="toc-sub" data-level="3">其他发行版：源码编译</a></div><div class="toc-group"><div class="toc-group-title">Mellanox</div><a href="#sec-mlnx" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">Mellanox MLNX_OFED 安装</span></a><a href="#t3-1" class="toc-sub" data-level="3">下载与解压</a><a href="#t3-2" class="toc-sub" data-level="3">安装（参数说明）</a><a href="#t3-3" class="toc-sub" data-level="3">重启与验证安装</a><a href="#t3-4" class="toc-sub" data-level="3">网口消失修复</a><a href="#t3-5" class="toc-sub" data-level="3">网卡模式切换（IB/Eth）</a></div></nav>
+</aside>
+<main class="main"><div class="main-inner">
+  <header class="page-header">
+    <h1>网卡安装教程</h1>
+    <div class="subtitle">Solarflare X2522（CentOS / Ubuntu）· Mellanox MLNX_OFED</div>
+  </header>
+  <div class="doc-lead">本教程面向<b>系统测试工程师</b>：涵盖 <b>Solarflare X2522</b> 网卡在 CentOS 7.9 与 Ubuntu 22.04 下的驱动/固件安装，以及 <b>Mellanox（MLNX_OFED）</b> 网卡驱动的安装与模式切换。所有命令均带一键复制，逐个解释。涉及包名、网卡名等占位内容请按现场实际值替换。</div>
+
+  <section class="card" id="sec-x2-centos"><h2>1. X2522 安装（CentOS 7.9）</h2>
+  <h3 id="t1-1">安装软件包</h3><p>Solarflare 网卡的基础工具集 <code>sfutils</code> 必须安装；<code>onload</code> 是用户态加速协议栈，<code>onload-kmod</code> 是其配套内核模块（按内核版本编译）。官方下载地址：<a href="https://www.amd.com/en/support/downloads/solarflare-downloads.html/ethernet-adapters/solarflare/x2-series.html" target="_blank">AMD Solarflare 驱动下载</a>。</p>
+  <div class="table-wrap"><table><thead><tr><th>软件包</th><th>作用</th><th>必要性</th></tr></thead><tbody><tr><td><code>sfutils</code></td><td>基础管理工具集：固件升级 <code>sfupdate</code>、启动 ROM <code>sfboot</code>、许可 <code>sfkey</code>、诊断 <code>sfctool</code></td><td>必须</td></tr><tr><td><code>onload</code></td><td>内核旁路用户态协议栈，大幅降低延迟、提升吞吐</td><td>按需（高要求才需）</td></tr><tr><td><code>onload-kmod</code></td><td>配合 Onload 的内核模块，按系统内核版本编译（3.10.0-1160.el7）</td><td>与 onload 同装</td></tr></tbody></table></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 安装 sfutils 基础工具集（先装）</span>
+yum install ./sfutils-8.3.3.1000-1.x86_64.rpm -y
+<span class="c"># 2) 安装 onload 用户态加速库</span>
+yum install ./onload-8.1.3.40-1.el7.x86_64.rpm -y
+<span class="c"># 3) 安装 onload-kmod 内核模块（与 onload 版本匹配）</span>
+yum install ./onload-kmod-3.10.0-1160.el7-8.1.3.40-1.el7.x86_64.rpm -y</code></pre></div><div class="note">解释：<code>yum install ./包名.rpm</code> 安装本地 RPM，<code>-y</code> 自动确认。三个包按顺序安装。<b>重要</b>：<code>onload-kmod</code> 版本绑定内核，若更换内核需重新下载匹配版本。</div>
+
+  <h3 id="t1-2">更新网卡固件</h3><p>固件更新会<strong>短暂禁用目标网口</strong>，请在业务空闲时执行。命令会列出每个端口当前版本与目标版本，确认后输入 <code>y</code> 回车开始更新。更新过程中会有 <code>Erasing / Writing / Complete</code> 的进度输出。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 执行固件更新（会显示当前版本与目标版本）</span>
+sfupdate --write</code></pre></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code data-lang="text"><span class="c"># 典型输出：出现 "press Y then Enter" 时输入 y 回车</span>
+AMD Solarflare firmware update utility [v8.3.3]
+enp225s0f0: updating Bundle firmware from 8.0.1.1002 to 8.6.2.1000
+enp225s0f0: will be disabled during Bundle firmware update
+To continue, press Y then Enter
+y
+enp225s0f0: writing Bundle firmware
+[100%] Writing   [100%] Complete
+enp225s0f1: not changing Bundle firmware (already 8.6.2.1000)</code></pre></div><div class="note.warn"><strong>注意</strong>：若某端口显示 <code>not changing ... to ...</code>，说明它已是目标版本，无需更新。更新过程中网口会临时断开，远程 SSH 可能中断，建议走带外（IPMI/BMC）操作。</div>
+
+  <h3 id="t1-3">加载并验证 Onload</h3><p>X2522 使用 <code>sfc</code> 驱动，加载 Onload 内核模块最直接的方式是用 <code>onload_tool reload</code>，然后验证模块是否就位、接口状态是否正常。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 加载 Onload 内核模块</span>
+sudo onload_tool reload
+<span class="c"># 2) 验证 Onload 是否可用（无报错即可）</span>
+onload
+<span class="c"># 3) 查看详细接口状态</span>
+sfboot
+<span class="c"># 4) 或查看当前固件/状态（不带 --write）</span>
+sfupdate</code></pre></div><div class="note">解释：<code>onload_tool reload</code> 重新加载内核模块；<code>onload</code> 单独运行会输出 Onload 版本及可用接口；<code>sfboot</code> 查看接口模式与 PXE/引导 ROM 设置；<code>sfupdate</code>（不带 <code>--write</code>）只查询状态、不修改。</div></section>
+
+  <section class="card" id="sec-x2-ubuntu"><h2>2. X2522 安装（Ubuntu 22.04）</h2>
+  <h3 id="t2-1">安装软件包</h3><p>Ubuntu 下对应三个 Deb 包：<code>sfutils</code>（基础工具集）、<code>onload-user</code>（用户态加速库）、<code>onload-dkms</code>（内核模块，由 DKMS 在新内核下自动重编译）。</p>
+  <div class="table-wrap"><table><thead><tr><th>软件包</th><th>作用</th><th>必要性</th></tr></thead><tbody><tr><td><code>sfutils</code></td><td>基础管理工具集（sfupdate / sfkey / sfctool / sfboot），与 CentOS 版一致</td><td>必须</td></tr><tr><td><code>onload-user</code></td><td><b>用户态</b>加速库，拦截网络系统调用实现内核旁路，降低延迟</td><td>按需</td></tr><tr><td><code>onload-dkms</code></td><td><b>内核模块</b>源码，DKMS 自动为当前/新内核编译</td><td>必须与 onload-user 同装</td></tr></tbody></table></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 安装 sfutils 基础工具集</span>
+sudo dpkg -i sfutils_8.3.3.1000-2_amd64.deb
+<span class="c"># 2) 安装 onload 用户态库与内核模块（用 apt 自动处理依赖）</span>
+sudo apt install ./onload-user_9.1.1.66-1_amd64.deb
+sudo apt install ./onload-dkms_9.1.1.66-1_all.deb</code></pre></div><div class="note">解释：<code>dpkg -i</code> 直接安装单个 Deb 包；<code>apt install ./包</code> 会<strong>自动解析并补齐依赖</strong>，推荐用于 onload 系列。<code>onload-dkms</code> 利用 DKMS，内核升级后模块自动重编译，不必手动重装。</div>
+
+  <h3 id="t2-2">更新网卡固件</h3><p>与 CentOS 流程一致，使用 <code>sfupdate --write</code>，确认后输入 <code>y</code> 回车，期间对应网口短暂禁用。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 执行固件更新（提示 "press Y then Enter" 时输入 y 回车）</span>
+sfupdate --write</code></pre></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code data-lang="text">AMD Solarflare firmware update utility [v8.3.3]
+enp225s0f0: updating Bundle firmware from 8.0.1.1002 to 8.6.2.1000
+To continue, press Y then Enter
+y
+enp225s0f0: writing Bundle firmware
+[100%] Erasing   [100%] Writing   [100%] Complete</code></pre></div>
+
+  <h3 id="t2-3">加载并验证 Onload</h3><p>加载内核模块并验证 Onload 及接口状态，步骤与 CentOS 相同。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 加载 Onload 内核模块</span>
+sudo onload_tool reload
+<span class="c"># 2) 验证 Onload 可用</span>
+sudo onload
+<span class="c"># 3) 查看接口状态</span>
+sfboot
+<span class="c"># 查看当前固件/状态</span>
+sfupdate</code></pre></div>
+
+  <h3 id="t2-4">其他发行版：源码编译</h3><p>非 CentOS/Ubuntu 或上述 RPM/Deb 不适配时，改用官方源码包编译安装：到官网下载区 <b>Software and Downloads → Onload &amp; ef_vi</b>，下载源码包后本地编译。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 官方下载地址（Onload & ef_vi 源码）</span>
+https://www.amd.com/en/support/downloads/solarflare-downloads.html/ethernet-adapters/solarflare/x2-series.html
+<span class="c"># 解压后按 README 编译安装</span>
+tar -zxvf onload-*.tar.gz
+cd onload-*/
+sudo ./install</code></pre></div></section>
+
+  <section class="card" id="sec-mlnx"><h2>3. Mellanox MLNX_OFED 安装</h2>
+  <h3 id="t3-1">下载与解压</h3><p>Mellanox 网卡使用官方 <code>MLNX_OFED</code> 驱动。到官网按系统版本与架构下载：<a href="https://network.nvidia.com/products/infiniband-drivers/linux/mlnx_ofed/" target="_blank">NVIDIA MLNX_OFED 下载页</a>。下载后解压。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 解压安装包</span>
+tar -zxvf MLNX_OFED_LINUX-*.tgz
+cd MLNX_OFED_LINUX-*
+<span class="c"># 2) 确认当前内核版本与支持矩阵</span>
+uname -r</code></pre></div>
+  <div class="note.warn"><strong>安装前务必确认</strong>：先用 <code>uname -r</code> 查内核，再与安装包文档/支持矩阵比对，确认其支持当前发行版、架构、内核。不要盲目加 <code>--force</code>——它可能替换发行版自带 mlx5/rdma 包并掩盖依赖问题，仅在厂商明确建议且有回滚方案时使用。</div>
+
+  <h3 id="t3-2">安装（参数说明）</h3><p>标准安装默认保留发行版自带 <code>mlx5/rdma</code> 驱动，只有确有功能/厂商支持需求时才安装 OFED。常用参数见下表。</p>
+  <div class="table-wrap"><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody><tr><td><code>--add-kernel-support</code></td><td>添加当前内核支持（编译内核模块）</td></tr><tr><td><code>--all</code></td><td>安装所有组件</td></tr><tr><td><code>--force</code></td><td>强制安装；仅在厂商建议、已备份有回滚时用</td></tr><tr><td><code>--without-fw-update</code></td><td>不更新固件</td></tr><tr><td><code>--with-mft</code></td><td>同时安装 MFT 工具</td></tr><tr><td><code>--vma</code></td><td>安装 VMA 加速库</td></tr><tr><td><code>--dpdk</code></td><td>安装 DPDK 支持</td></tr><tr><td><code>--upstream-libs</code></td><td>使用上游库</td></tr></tbody></table></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 查看安装帮助（确认当前环境支持的参数）</span>
+./mlnxofedinstall --help | less
+<span class="c"># 标准安装（推荐）</span>
+sudo ./mlnxofedinstall</code></pre></div>
+
+  <h3 id="t3-3">重启与验证安装</h3><p>安装完成后重启 OFED 服务（或直接重启系统），然后用 <code>ofed_info</code>、<code>ibstat</code>、<code>ibstatus</code> 等验证驱动、RDMA 设备与端口状态。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 重启 OFED 服务</span>
+sudo /etc/init.d/openibd restart
+<span class="c"># 或直接重启系统（推荐）</span>
+# sudo reboot
+<span class="c"># 查看 OFED 版本</span>
+ofed_info -s
+<span class="c"># 查看所有组件完整版本</span>
+ofed_info -a
+<span class="c"># 查看内核模块是否加载</span>
+lsmod | grep mlx5
+<span class="c"># 查看 RDMA 设备与网卡映射</span>
+ibdev2netdev
+<span class="c"># 查看网卡状态</span>
+ibstat
+<span class="c"># 查看 RDMA 设备详细信息（端口/速率/MTU）</span>
+ibv_devinfo
+<span class="c"># 查看网口信息</span>
+sudo lshw -class network -short
+<span class="c"># 查看固件版本</span>
+mlxfwmanager
+<span class="c"># 查看 HCA 端口状态（State 应为 Active）</span>
+ibstatus</code></pre></div>
+  <div class="note">解释：<code>ofed_info -s</code> 输出 OFED 版本（形如 <code>MLNX_OFED_LINUX-24.10-4.1.4.0</code>）；<code>ibstat</code>/<code>ibstatus</code> 查看端口状态，正常应为 <b>State: Active</b>、<b>SM lid 有值</b>。若 <code>State: Down</code> 或 <code>SM lid: 0x0</code>，说明缺少子网管理器（需启用 OpenSM），见安装笔记对应章节。</div>
+
+  <h3 id="t3-4">网口消失修复</h3><p>安装后若网口不见，通常是内核模块未加载，重新加载或手动 <code>modprobe</code> 即可恢复。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 重新加载驱动</span>
+sudo /etc/init.d/openibd restart
+<span class="c"># 2) 或手动加载核心模块</span>
+sudo modprobe mlx5_core
+sudo modprobe mlx5_ib</code></pre></div>
+
+  <h3 id="t3-5">网卡模式切换（IB/Eth）</h3><p>Mellanox 端口支持 InfiniBand 与 Ethernet 两种模式。先启动 MST、用 <code>mlxconfig</code> 查询并设置 <code>LINK_TYPE</code>（1=IB，2=Ethernet），重启生效。</p>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 启动 MST 服务（管理工具依赖）</span>
+sudo mst start
+<span class="c"># 2) 查看设备列表，记下设备路径（如 /dev/mst/mt4119_pciconf0）</span>
+sudo mst status
+<span class="c"># 3) 查询当前端口模式</span>
+sudo mlxconfig -d /dev/mst/mt4119_pciconf0 query | grep LINK_TYPE
+<span class="c"># 4) 切换到 Ethernet 模式（1=IB，2=Eth）；双口网卡同时设 P1/P2</span>
+sudo mlxconfig -y -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=2 LINK_TYPE_P2=2
+<span class="c"># 5) 重启生效</span>
+sudo reboot</code></pre></div>
+  <div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 重启后验证模式切换结果</span>
+ibstat | grep "Link layer"
+<span class="c"># 应显示：Link layer: Ethernet</span></code></pre></div>
+  <div class="note">解释：<code>mst start/status</code> 生成并列出设备节点；<code>mlxconfig query</code> 查询配置，<code>set</code> 写入配置（<code>-y</code> 跳过确认）；<code>reboot</code> 后模式生效。双口卡务必同时设置 <code>LINK_TYPE_P1</code> 与 <code>LINK_TYPE_P2</code>。</div></section>
+
+</div></main>
+<button class="backtop" title="回到顶部">↑</button>
+<div id="toast">已复制到剪贴板</div>
+<script>
+var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+var sections = tocLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+
+function onScroll(){
+  var pos = window.scrollY;
+  var cur = -1;
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i] && sections[i].offsetTop - 120 <= pos) cur = i;
+  }
+  tocLinks.forEach(function(a, i){ a.classList.toggle('active', i === cur); });
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var pct = max > 0 ? (pos / max) * 100 : 0;
+  document.querySelector('.progress-bar').style.width = pct + '%';
+  document.querySelector('.backtop').classList.toggle('show', pos > 400);
+}
+
+function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(t);
+  }
+  return new Promise(function(resolve, reject){
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); resolve(); } catch(e){ reject(e); }
+    document.body.removeChild(ta);
+  });
+}
+
+function showToast(){
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 1400);
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var code = btn.closest('.code-card').querySelector('code');
+  var text = code.innerText;
+  copyText(text).then(function(){
+    var old = btn.textContent;
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied'); showToast();
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('copied'); }, 1600);
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+document.querySelector('.backtop').addEventListener('click', function(){
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

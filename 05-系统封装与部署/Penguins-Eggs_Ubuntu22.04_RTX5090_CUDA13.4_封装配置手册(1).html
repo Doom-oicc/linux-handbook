@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Penguins’ Eggs 定制系统封装手册 · Ubuntu 22.04 RTX 5090 CUDA 13.4</title>
+<style>
+:root {
+  --bg: #eefaf5; --bg-2: #f6fcf9; --surface: #ffffff;
+  --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+  --accent: #10b981; --accent-dark: #065f46; --accent-soft: #d7f5e6;
+  --border: rgba(0,0,0,.06);
+  --code-bg: #ffffff; --code-text: #000000;
+  --comment: #b0b8c0; --keyword: #0f766e;
+  --shadow: 0 4px 24px rgba(0,0,0,.04), 0 16px 48px rgba(0,0,0,.06);
+  --radius: 24px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; display: flex; min-height: 100vh;
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 17px;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 50%, #fff 100%);
+  color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased;
+}
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 300px; height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f0faf4 100%);
+  border-right: 1px solid rgba(4,120,87,.14);
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; z-index: 100;
+}
+.sidebar-brand { padding: 26px 22px 20px; border-bottom: 1px solid rgba(4,120,87,.12); background: rgba(255,255,255,.7); }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 800; color: #065f46; letter-spacing: -.01em; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(16,185,129,.22); }
+.brand-sub { font-size: 13px; color: #4b5563; margin-top: 6px; font-weight: 600; }
+.progress { height: 3px; background: #d7f5e6; margin: 0 22px 14px; border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+.toc-scroll::-webkit-scrollbar { width: 6px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: #c7e6d8; border-radius: 3px; }
+.toc-scroll::-webkit-scrollbar-track { background: transparent; }
+.toc-group { margin-bottom: 16px; }
+.toc-group-title { display: flex; align-items: center; gap: 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #065f46; font-weight: 800; padding: 10px 10px 6px; }
+.toc-group-title::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+.toc-chap { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #1f2937; text-decoration: none; font-size: 14.5px; line-height: 1.45; font-weight: 600; transition: all .15s ease; }
+.toc-chap:hover { background: #eaf7f0; color: #065f46; }
+.toc-chap.active { background: #d7f5e6; color: #04563e; font-weight: 800; box-shadow: inset 3px 0 0 var(--accent); }
+.chap-num { width: 24px; height: 24px; border-radius: 8px; background: #e2f3ea; color: #065f46; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; border: 1px solid rgba(4,120,87,.16); }
+.toc-chap.active .chap-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,210,106,.35); }
+.chap-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toc-sub { display: block; position: relative; padding: 6px 10px 6px 44px; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13.5px; line-height: 1.4; font-weight: 500; transition: all .15s ease; }
+.toc-sub::before { content: ''; position: absolute; left: 30px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: #5ce6ad; }
+.toc-sub:hover { background: #eaf7f0; color: #065f46; }
+.toc-sub.active { background: #d7f5e6; color: #04563e; font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+
+.main { margin-left: 300px; flex: 1; min-width: 0; padding: 50px 60px 120px; }
+.main-inner { max-width: 880px; margin: 0 auto; }
+.page-header { margin-bottom: 40px; }
+.page-header h1 { font-size: 42px; font-weight: 900; letter-spacing: -.04em; margin: 0; color: var(--accent-dark); line-height: 1.1; }
+.page-header .subtitle { color: var(--text-2); font-size: 18px; margin-top: 12px; font-weight: 500; }
+.doc-lead { background: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 24px 30px; box-shadow: 0 4px 24px rgba(0,0,0,.04); color: var(--text-2); font-size: 16px; line-height: 1.75; margin-bottom: 40px; }
+.doc-lead strong { color: var(--accent-dark); }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 40px 46px; box-shadow: var(--shadow); margin-bottom: 34px; transition: transform .25s ease, box-shadow .25s ease; scroll-margin-top: 40px; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06), 0 24px 64px rgba(0,0,0,.08); }
+.card h2 { font-size: 28px; font-weight: 800; margin: 0 0 18px; letter-spacing: -.03em; color: var(--accent-dark); padding-bottom: 14px; border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--accent) 0%, rgba(16,185,129,.22) 70%, transparent 100%) 1; }
+.card h3 { font-size: 21px; font-weight: 700; margin: 26px 0 12px; color: #065f46; display: flex; align-items: center; gap: 10px; }
+.card h3::before { content: ''; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.card h4 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+.card p { margin: 10px 0; color: var(--text-2); font-size: 16px; }
+.card ul, .card ol { margin: 10px 0; padding-left: 24px; color: var(--text-2); font-size: 16px; }
+.card li { margin: 5px 0; }
+.card code:not(.hl) { background: #d7f5e6; color: #065f46; border-radius: 5px; padding: 1px 6px; font-size: 16px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.code-card { border-radius: 12px; overflow: hidden; margin: 14px 0; background: var(--code-bg); border: 1px solid rgba(4,120,87,.14); box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.code-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: #f2faf5; border-bottom: 1px solid rgba(4,120,87,.10); }
+.dots { display: flex; gap: 7px; }
+.dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+.lang { margin-left: 4px; font-size: 13px; color: #065f46; font-weight: 600; letter-spacing: .03em; flex: 1; }
+.copy { background: #ffffff; border: 1px solid rgba(4,120,87,.25); color: #065f46; font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s ease; }
+.copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+.code-card pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+.code-card code { font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; font-size: 15.5px; line-height: 1.7; color: #000000 !important; display: block; }
+.code-card .c { color: #8a94a0 !important; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 12px; border: 1px solid rgba(4,120,87,.12); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: #fff; }
+th { background: #edf9f2; color: #065f46; text-align: left; padding: 10px 14px; font-weight: 700; white-space: nowrap; }
+td { padding: 9px 14px; border-top: 1px solid rgba(4,120,87,.08); color: var(--text-2); }
+td code { background: #d7f5e6; color: #065f46; border-radius: 4px; padding: 0 5px; font-size: 14px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.note { background: #f0faf5; border: 1px solid rgba(4,120,87,.16); border-left: 4px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 14px 0; color: #374151; font-size: 15.5px; line-height: 1.75; }
+.note strong { color: #065f46; }
+.note.warn { background: #fff8ec; border-color: rgba(245,158,11,.3); border-left-color: #f59e0b; color: #78350f; }
+.note.warn strong { color: #b45309; }
+
+.backtop { position: fixed; right: 28px; bottom: 28px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,.45); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 99; }
+  .backtop.show { opacity: 1; pointer-events: auto; }
+  .backtop:hover { transform: translateY(-3px); }
+  #toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px); background: #065f46; color: #fff; padding: 10px 22px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 200; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 30px 20px 80px; }
+  .card { padding: 28px 22px; }
+  .page-header h1 { font-size: 30px; }
+}
+
+.code-card code:not(.hl) { background: #fff !important; padding: 0 !important; border-radius: 0 !important; }
+.badge { display:inline-block; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:800; background:#d7f5e6; color:#065f46; margin:2px 4px 2px 0; }
+.badge.warn { background:#fff2d8; color:#92400e; }
+.badge.danger { background:#fee2e2; color:#991b1b; }
+.kbd { display:inline-block; border:1px solid #cbd5e1; background:#f8fafc; border-radius:5px; padding:1px 7px; color:#1f2937; font-family:monospace; font-size:.92em; box-shadow:0 1px 0 #cbd5e1; }
+.source-links a { color:#047857; font-weight:700; overflow-wrap:anywhere; }
+.small { font-size:13px !important; color:#6b7280 !important; }
+.steps { counter-reset: step; list-style:none !important; padding-left:0 !important; }
+.steps li { position:relative; padding:4px 0 7px 42px; min-height:32px; }
+.steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:2px; width:28px; height:28px; border-radius:9px; background:#d7f5e6; color:#065f46; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+.card .table-wrap table td:first-child { font-weight:700; color:#374151; }
+.card h2 { scroll-margin-top:30px; }
+@media print { .sidebar,.backtop,.copy { display:none !important; } .main { margin-left:0; padding:10px; } .card { box-shadow:none; break-inside:avoid; } body { background:white; } }
+</style></head><body>
+<aside class="sidebar"><div class="sidebar-brand"><div class="brand"><span class="brand-dot"></span>系统封装手册</div><div class="brand-sub">Penguins’ Eggs 26.10.22 · 命令参数与部署验收</div></div><div class="progress"><div class="progress-bar"></div></div><nav class="toc-scroll" id="toc"><div class="toc-group"><div class="toc-group-title">封装目标</div><a href="#sec-goal" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">目标、模式与封装原理</span></a><a href="#t1-1" class="toc-sub" data-level="3">模式选型：Standard Live</a></div><div class="toc-group"><div class="toc-group-title">环境准备</div><a href="#sec-install" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">安装与核对新版引擎</span></a><a href="#t2-1" class="toc-sub" data-level="3">版本与安装包</a><a href="#t2-2" class="toc-sub" data-level="3">本地 DEB 安装</a><a href="#t2-3" class="toc-sub" data-level="3">yq 依赖处理</a><a href="#sec-preflight" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">驱动、CUDA 与磁盘预检</span></a><a href="#t3-1" class="toc-sub" data-level="3">封装前检查清单</a><a href="#t3-2" class="toc-sub" data-level="3">命令解释</a><a href="#t3-3" class="toc-sub" data-level="3">CUDA 环境变量</a></div><div class="toc-group"><div class="toc-group-title">配置与执行</div><a href="#sec-config" class="toc-chap"><span class="chap-num">4</span><span class="chap-text">eggs config 详细配置</span></a><a href="#t4-1" class="toc-sub" data-level="3">打开配置界面</a><a href="#t4-2" class="toc-sub" data-level="3">Settings 字段建议</a><a href="#t4-3" class="toc-sub" data-level="3">保存与 Calamares</a><a href="#sec-excludes" class="toc-chap"><span class="chap-num">5</span><span class="chap-text">Excludes、个人数据与全局环境</span></a><a href="#t5-1" class="toc-sub" data-level="3">排除列表</a><a href="#t5-2" class="toc-sub" data-level="3">保留与排除策略</a><a href="#t5-3" class="toc-sub" data-level="3">CUDA 全局变量</a><a href="#sec-remaster" class="toc-chap"><span class="chap-num">6</span><span class="chap-text">正式封装与命令参数详解</span></a><a href="#t6-1" class="toc-sub" data-level="3">正式封装</a><a href="#t6-2" class="toc-sub" data-level="3">命令参数</a><a href="#t6-3" class="toc-sub" data-level="3">封装前检查</a></div><div class="toc-group"><div class="toc-group-title">验证与排错</div><a href="#sec-test" class="toc-chap"><span class="chap-num">7</span><span class="chap-text">ISO 输出、启动与安装验收</span></a><a href="#t7-1" class="toc-sub" data-level="3">ISO 位置与校验</a><a href="#t7-2" class="toc-sub" data-level="3">启动和安装测试</a><a href="#t7-3" class="toc-sub" data-level="3">安装后验收</a><a href="#sec-trouble" class="toc-chap"><span class="chap-num">8</span><span class="chap-text">故障排查与日志</span></a><a href="#t8-1" class="toc-sub" data-level="3">常见问题</a><a href="#t8-2" class="toc-sub" data-level="3">失败日志</a><a href="#sec-sources" class="toc-chap"><span class="chap-num">9</span><span class="chap-text">参考资料与适用范围</span></a><a href="#t9-1" class="toc-sub" data-level="3">官方文档</a></div></nav></aside>
+<main class="main"><div class="main-inner"><header class="page-header"><h1>定制系统封装手册</h1><div class="subtitle">Ubuntu 22.04 Desktop · RTX 5090 · NVIDIA 595.84 · CUDA Toolkit 13.4</div></header>
+<div class="doc-lead">本手册沿用你提供的绿色工作手册网页风格：左侧目录定位、章节卡片、命令一键复制、参数表格和故障速查。目标是把<strong>当前已配置的系统级软件与环境</strong>制作成通用可启动、可安装 ISO；不克隆源用户的个人数据，并重点验证 Live 用户能否在安装后正确清理。</div>
+<section class="card" id="sec-goal"><h2>1. 目标、模式与封装原理</h2>
+<div class="note"><strong>目标：</strong>将当前已配置的 Ubuntu 22.04 Desktop、NVIDIA RTX 5090 驱动 595.84、CUDA Toolkit 13.4，以及系统级软件和配置封装成可启动、可安装的 ISO。目标机安装时创建自己的正式用户；不复制源系统用户的个人 Home 数据。</div>
+<h3 id="t1-1">模式选型：Standard Live，不是 Clone</h3>
+<div class="table-wrap"><table><thead><tr><th>模式/命令</th><th>会做什么</th><th>本项目是否使用</th></tr></thead><tbody><tr><td>默认：<code>sudo eggs remaster</code></td><td>制作通用 Live ISO；默认标准模式排除原用户的个人 Home 数据，系统级文件通常会纳入（仍受排除列表影响）。</td><td><span class="badge">使用</span></td></tr><tr><td><code>--clone</code></td><td>克隆模式，会保留用户、凭据及 <code>/home</code> 数据。</td><td><span class="badge danger">不要使用</span></td></tr><tr><td><code>--crypted</code></td><td>生成加密的 SquashFS/LUKS 镜像，当前官方文档说明仅限 Debian 系列。</td><td>不需要</td></tr></tbody></table></div>
+<p>“全新封装”不等于只打包官方 Ubuntu 原版文件。它是基于<strong>当前正在运行的系统</strong>重新制作 Live ISO：已经装好的系统级应用和配置通常会随镜像走；原用户 Home 目录里的个人设置不会自动完整继承。</p>
+<div class="note warn"><strong>关键区别：</strong>“保留全部系统环境”与“复制原用户全部个人配置”不是同一件事。CUDA 若只在 <code>~/.bashrc</code> 里配置 PATH，新建用户未必能继承；建议把所有用户都需要的环境变量放到 <code>/etc/profile.d/</code>。</div></section><section class="card" id="sec-install"><h2>2. 安装与核对新版引擎</h2><h3 id="t2-1">确认当前版本与安装包</h3>
+<p>本手册对应你的实际流程：Ubuntu 22.04 Desktop amd64、<code>penguins-eggs_26.10.22-1_amd64.deb</code>、RTX 5090、NVIDIA 595.84、CUDA Toolkit 13.4。先确认版本，避免把旧版 <code>eggs-legacy</code> 命令与新版命令混用。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">cd ~
+eggs version
+eggs --help</code></pre></div><div class="note"><code>eggs version</code> 显示封装引擎版本；<code>eggs --help</code> 显示当前安装包实际支持的命令。版本号或参数若与本文不同，以本机 <code>eggs --help</code> 和 <code>eggs remaster --help</code> 为准。</div>
+<h3 id="t2-2">从本地 DEB 安装新版</h3>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">cd ~
+sudo apt update
+sudo apt -s install ./penguins-eggs_26.10.22-1_amd64.deb</code></pre></div><p>先进行模拟安装。确认列表没有卸载 NVIDIA 驱动、CUDA 或 Linux 内核之后，再正式执行：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo apt install ./penguins-eggs_26.10.22-1_amd64.deb</code></pre></div><div class="note"><strong>参数解释：</strong><code>cd ~</code> 切换到当前用户主目录；<code>sudo</code> 以管理员权限执行；<code>apt update</code> 刷新软件包索引；<code>-s</code> 是 simulation（模拟），只演算安装计划，不实际安装；<code>./包名.deb</code> 表示安装当前目录里的本地 DEB 包，前缀 <code>./</code> 很重要。</div>
+<h3 id="t2-3">关于 yq 依赖报错</h3>
+<p>你的安装遇到过 <code>Depends: yq but it is not installable</code>，随后安装了本地文件 <code>yq_3.1.0-3_all.deb</code>，并成功配置了 <code>python3-argcomplete</code>、<code>python3-toml</code>、<code>python3-xmltodict</code> 等依赖。若这是同一台已处理好的机器，通常不需要重复安装。只有在新环境同样缺少可安装的 <code>yq</code>、并且你已从可信官方包位置取得该 DEB 时，才考虑这个绕行步骤：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo apt install ./yq_3.1.0-3_all.deb</code></pre></div><div class="note warn"><strong>注意：</strong>这是针对你当前依赖问题的临时绕行方法。先检查依赖和包来源；不要把整个 Debian 软件源加入 Ubuntu 22.04，也不要在没看安装计划时强制覆盖系统包。</div>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">dpkg -s yq | grep -E '^(Package|Version|Status):'
+yq --version</code></pre></div><div class="note warn">不要为了满足一个依赖就把整套 Debian 软件源添加到 Ubuntu 22.04。你这次采用的是单独的 Debian yq DEB 包方案，属于为当前安装问题采取的绕行方式，并非 Penguins’ Eggs 对任意 Ubuntu 22.04 环境的兼容保证。新机器请优先核验官方仓库与包依赖。</div><h3 id="t2-4">软件源与 Legacy 旧版共存检查</h3><p>本地 DEB 安装成功后，封装本身不一定需要再次添加仓库。若尚未配置官方仓库，可按官方文档使用下列命令；若 <code>apt update</code> 已显示 Penguins-Eggs 官方源，则可跳过。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo eggs tools repo add
+sudo apt update</code></pre></div><p>检查当前是否还装着旧版 Legacy 包：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">dpkg -l | grep -E 'penguins-eggs(-legacy)?|penguins-gui'</code></pre></div><div class="note warn">不要同时混用 <code>eggs-legacy produce</code> 和新版 <code>eggs remaster</code>。如果旧版包仍在，先模拟卸载 <code>sudo apt -s purge penguins-eggs-legacy</code>，检查卸载列表没有 NVIDIA、CUDA 或内核组件，再决定是否正式卸载。</div></section><section class="card" id="sec-preflight"><h2>3. 驱动、CUDA 与磁盘预检</h2><h3 id="t3-1">封装前检查清单</h3><p>先核对系统版本、内核、NVIDIA 驱动、CUDA 编译工具和剩余空间。这些命令只读，不会修改系统。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">cat /etc/os-release
+uname -r
+eggs version
+nvidia-smi
+nvcc --version
+command -v nvcc
+readlink -f "$(command -v nvcc)"
+dkms status
+df -h / /home</code></pre></div><h3 id="t3-2">每条命令看什么</h3><div class="table-wrap"><table><thead><tr><th>命令</th><th>检查目的</th><th>合格判断</th></tr></thead><tbody><tr><td><code>cat /etc/os-release</code></td><td>确认基础系统发行版</td><td>显示 Ubuntu 22.04 / Jammy</td></tr><tr><td><code>uname -r</code></td><td>查看当前运行内核</td><td>记录实际内核版本，例如 6.8.0-40-generic</td></tr><tr><td><code>nvidia-smi</code></td><td>验证 NVIDIA 内核驱动/用户态工具是否通信正常</td><td>识别 RTX 5090，能显示驱动版本和显存信息</td></tr><tr><td><code>nvcc --version</code></td><td>查看 CUDA Toolkit 编译器版本</td><td>显示 release 13.4（你之前的输出为 V13.4.92）</td></tr><tr><td><code>command -v nvcc</code></td><td>查找 nvcc 当前实际路径</td><td>应返回可执行文件路径</td></tr><tr><td><code>readlink -f ...</code></td><td>解析路径最终指向位置</td><td>用来判断 CUDA 安装目录，不要只凭版本号推测路径</td></tr><tr><td><code>dkms status</code></td><td>检查 DKMS 内核模块状态</td><td>NVIDIA 模块应对目标内核显示 installed</td></tr><tr><td><code>df -h / /home</code></td><td>检查系统盘和镜像工作目录所在分区余量</td><td>保留充分空间给临时文件和 ISO；具体占用取决于系统大小及压缩率</td></tr></tbody></table></div><div class="note"><strong>驱动兼容注意：</strong>你之前显示 NVIDIA 595.84 模块针对 <code>6.8.0-40-generic</code> 构建。封装会包含系统文件，但这不等于模块在所有目标内核、所有 Secure Boot 设置下都能加载。必须用生成 ISO 实际启动、安装和验证。</div><h3 id="t3-3">CUDA 环境变量检查</h3><p>默认标准模式不会复制源用户的完整 Home 配置。检查 CUDA 的 PATH/库路径是否只写在用户配置中：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">grep -nE 'CUDA|cuda|LD_LIBRARY_PATH' ~/.bashrc ~/.profile /etc/profile /etc/profile.d/*.sh 2&gt;/dev/null
+ls -ld /usr/local/cuda* 2&gt;/dev/null</code></pre></div><p>若 CUDA PATH 只写在 <code>/home/ps/.bashrc</code> 中，新安装账号可能没有这个设置。确认实际 CUDA 路径后，再把“所有新用户都需要”的变量放进 <code>/etc/profile.d/cuda.sh</code>。下面仅为示例，执行前先确认 <code>/usr/local/cuda</code> 确实指向你想使用的版本：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo tee /etc/profile.d/cuda.sh &gt;/dev/null &lt;&lt;'EOF'
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+EOF</code></pre></div><div class="note warn">上述 CUDA 环境变量是<strong>示例模板</strong>，不是盲目复制的通用命令。若你的真实安装路径是 <code>/usr/local/cuda-13.4</code> 且没有 <code>/usr/local/cuda</code> 符号链接，应按真实目录调整。不要把无效路径写进全局环境。</div></section><section class="card" id="sec-config"><h2>4. eggs config 详细配置</h2><h3 id="t4-1">打开配置界面</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo eggs config</code></pre></div><p>你看到的配置界面标题为 <code>COA CONFIG - PENGUINS-EGGS</code>。用 <span class="kbd">↑</span>/<span class="kbd">↓</span> 选择字段；用 <span class="kbd">←</span>/<span class="kbd">→</span> 切换选项；文字字段可直接输入；按 <span class="kbd">Tab</span> 切换 <strong>Settings / Excludes / Save</strong> 标签。</p>
+<h3 id="t4-2">Settings 字段建议</h3><div class="table-wrap"><table><thead><tr><th>字段</th><th>建议值</th><th>说明</th></tr></thead><tbody><tr><td>User</td><td><code>liveiso</code></td><td>ISO 启动进入 Live 桌面时使用的临时用户名，不是目标机器安装后的正式用户名。自定义用户名会被新版配置传递给 Live 系统和安装器。</td></tr><tr><td>Password</td><td>专用强密码</td><td>你截图中是默认值 <code>evolution</code>，建议修改。不要复用源账号或生产环境密码；这只是 Live 环境密码。</td></tr><tr><td>Algorithm</td><td><code>zstd</code></td><td>SquashFS 压缩算法。通常适合兼顾构建速度和压缩率。官方也列出 xz、lz4、gzip。</td></tr><tr><td>Level</td><td><code>3</code></td><td>zstd 压缩等级。较高等级可能增加构建时间；建议先用默认 3，除非经过测试有更明确需求。</td></tr><tr><td>ISO prefix</td><td><code>ubuntu2204-rtx5090-cuda134</code></td><td>生成 ISO 文件名的自定义前缀，便于识别镜像用途和版本。它不会改变系统功能。</td></tr><tr><td>RAM mode option</td><td>按需；可先保留 enabled</td><td>控制启动菜单是否提供将 Live 系统装入内存的选项。装入 RAM 需要足够内存；内存不足时选择普通启动。</td></tr><tr><td>Installer</td><td><code>calamares</code></td><td>图形化安装器，适合让目标机器通过窗口界面安装到硬盘。<code>krill</code> 是文本/TUI 安装器。</td></tr></tbody></table></div><div class="note"><strong>为什么设置 User = liveiso？</strong> 你旧版镜像安装后曾残留 <code>live</code>（UID 1000），而正式用户 <code>ps</code> 变成 UID 1001。新版 changelog 从 26.10.5 起说明会把自定义 Live 用户传递到系统和安装器栈，并修复孤立 live 用户相关问题；改名不是单独的清理保障，安装后仍必须验证。</div><h3 id="t4-3">保存与 Calamares</h3><ol class="steps"><li>在 Settings 完成字段修改。</li><li>按 <span class="kbd">Tab</span> 到 Excludes，审查排除列表；具体说明见下一节。</li><li>再按 <span class="kbd">Tab</span> 到 Save，选择 <strong>Save and exit</strong>，不要选 Exit without saving。</li><li>如果界面提示 Calamares 将在保存时安装（install on save），保持联网并等待完成。</li><li>返回终端检查：<code>command -v calamares</code>。有路径表示命令存在；仍需确认它可实际启动、被 Eggs 配置使用。</li></ol>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">command -v calamares
+eggs config</code></pre></div></section><section class="card" id="sec-excludes"><h2>5. Excludes、个人数据与全局环境</h2><h3 id="t5-1">查看当前排除列表</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo sed -n '1,240p' /etc/penguins-eggs.d/custom.exclude.list</code></pre></div><p>在配置界面中，进入 <strong>Excludes</strong> 标签，选中列表后按回车可以用当前编辑器修改。官方说明：这个文件中的路径会从生成的 SquashFS 文件系统中排除；默认列表可能包括 Docker、Podman、LXC/LXD 和 Snap 等较大的环境，因此要检查它是否符合你要复制的软件清单。</p>
+<h3 id="t5-2">哪些应该保留、哪些要排除？</h3><div class="table-wrap"><table><thead><tr><th>类别</th><th>建议</th><th>理由</th></tr></thead><tbody><tr><td>NVIDIA 驱动和内核模块</td><td>不要主动加入排除列表；查明其实际路径</td><td>否则 Live/已安装系统可能缺模块或无法运行 <code>nvidia-smi</code>。</td></tr><tr><td>CUDA Toolkit</td><td>不要排除真实安装目录，例如 <code>/usr/local/cuda-13.4</code></td><td>这是 CUDA 编译器、头文件和库文件可能所在的位置。先用 <code>readlink</code> 确认真实路径。</td></tr><tr><td><code>/home/ps</code> 个人数据</td><td>默认模式下仍要确认排除行为；不要因为想保留设置而使用 <code>--clone</code></td><td>SSH 私钥、浏览器档案、Shell 历史、令牌和个人文件不应分发。</td></tr><tr><td>固定 IP、VPN、Wi-Fi 密码</td><td>分发前清理或确认脱敏</td><td>防止目标机器继承源机器静态地址、网络凭据或 VPN 配置。</td></tr><tr><td>Snap / Docker / Podman 等</td><td>只有确实需要时才修改默认排除项</td><td>被排除后相应应用或容器数据可能不会进入 ISO，镜像大小也会变化。</td></tr><tr><td><code>/etc</code> 系统配置</td><td>保留需要的系统级配置，但清理含秘密的文件</td><td>系统级设置通常需要继承；不要把整个 <code>/etc</code> 一概排除，也不要无检查地全部复制。</td></tr></tbody></table></div><div class="note warn"><strong>个人配置迁移：</strong>如果只想继承桌面主题、输入法或普通应用偏好，可以审查后迁移所需文件到 <code>/etc/skel</code> 作为新账户默认配置。<code>sudo eggs tools skel</code> 用于从当前用户配置建立 <code>/etc/skel</code>，但会带来复制用户设置的风险；使用前后都要检查密钥、浏览器数据、凭据和账户相关文件，不能把它当作“无条件安全复制”。</div><h3 id="t5-3">确认 CUDA 不是只配置在原用户目录</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">grep -nE 'CUDA|cuda|LD_LIBRARY_PATH' ~/.bashrc ~/.profile 2&gt;/dev/null
+ls -l /etc/profile.d/</code></pre></div><p>如果只在原用户的 <code>.bashrc</code> 中设置 CUDA 变量，默认标准模式不保证把该用户配置交给新账户。应该根据真实 CUDA 路径把全局变量放在 <code>/etc/profile.d/</code>，再用新登录 shell 验证。</p></section><section class="card" id="sec-remaster"><h2>6. 正式封装与命令参数详解</h2><h3 id="t6-1">正式封装命令</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo eggs remaster</code></pre></div><p>这是本项目建议使用的默认 Standard Live 封装命令。不加 <code>--clone</code>，不加 <code>--crypted</code>。确认配置已保存后再执行。</p>
+<h3 id="t6-2">常用命令参数说明</h3><div class="table-wrap"><table><thead><tr><th>参数/命令</th><th>作用</th><th>什么时候用</th></tr></thead><tbody><tr><td><code>sudo eggs remaster</code></td><td>以管理员权限根据配置创建 Live ISO。</td><td>正式封装；本项目默认使用。</td></tr><tr><td><code>-w</code> / <code>--wizard</code></td><td>启动交互式向导，让你选择模式和压缩选项。</td><td>想在一次向导中重新确认设置时。</td></tr><tr><td><code>--clone</code></td><td>克隆模式，保留用户、凭据和 <code>/home</code>。</td><td>只在明确需要完整克隆源用户时使用；本项目不要用。</td></tr><tr><td><code>--crypted</code></td><td>加密 SquashFS/LUKS 模式；当前官方文档注明限 Debian 系列，且与 <code>--clone</code> 互斥。</td><td>本项目不需要。</td></tr><tr><td><code>--path &lt;路径&gt;</code></td><td>指定工作目录；默认 <code>/home/eggs</code>。</td><td>工作目录需放在空间充足的分区时。</td></tr><tr><td><code>-t</code> / <code>--target-dir &lt;路径&gt;</code></td><td>把构建树和 ISO 输出重定向到外部目录/挂载盘；会在 <code>/home/eggs</code> 建链接。</td><td>工作盘空间不足、想把输出放到数据盘时。先确认挂载成功。</td></tr><tr><td><code>--stop-after &lt;step&gt;</code></td><td>调试用：到指定步骤停止并留下挂载环境。</td><td>排查构建失败；正常生产封装不要用。</td></tr><tr><td><code>--debug</code></td><td>输出处理后的 YAML/JSON 执行计划后退出，不进行完整构建。</td><td>检查计划是否符合预期；它不会生成最终 ISO。</td></tr><tr><td><code>-c</code> / <code>--compression</code></td><td>版本更新记录中提供直接指定 SquashFS 压缩算法的能力，具体取值与本机版本请先看 <code>eggs remaster --help</code>。</td><td>仅在明确需要从命令行覆盖配置时使用。</td></tr><tr><td><code>--anonymous</code></td><td>用于控制新版引入的匿名统计/遥测相关行为；具体语义以本机 <code>eggs remaster --help</code> 与该版本说明为准。</td><td>对统计/隐私有要求时先阅读帮助和隐私说明。</td></tr></tbody></table></div><div class="note">本手册把常用参数整理为操作参考。不同 26.10.x 小版本的旗标会变，执行 <code>eggs remaster --help</code> 可获得本机真实支持列表；不要将 Legacy 的 <code>eggs-legacy produce</code> 参数照搬到新版。</div><h3 id="t6-3">封装前最后一遍检查</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">eggs version
+nvidia-smi
+nvcc --version
+dkms status
+df -h / /home
+sudo eggs remaster --debug</code></pre></div><p><code>--debug</code> 仅用于确认执行计划。检查没问题后，再单独执行不带 <code>--debug</code> 的正式命令：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo eggs remaster</code></pre></div><div class="note warn">封装期间保持供电、联网（如果步骤需要下载引导程序）、不休眠，不要按 Ctrl+C。磁盘临时空间会随着系统规模和压缩算法变化。</div></section><section class="card" id="sec-test"><h2>7. ISO 输出、启动与安装验收</h2><h3 id="t7-1">默认输出位置</h3><p>默认输出位置通常是 <code>/home/eggs/</code>。目录中可能看到 ISO 符号链接，真实文件位于工作目录内部；因此同时检查链接和目标文件。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">ls -lh /home/eggs/*.iso
+find /home/eggs -maxdepth 3 -type f -iname "*.iso" -printf "%p\t%k KB\n"
+readlink -f /home/eggs/*.iso</code></pre></div><p>若有 ISO 文件，检查文件类型、计算校验值：</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">file /home/eggs/mnt/你的镜像文件.iso
+sha256sum /home/eggs/mnt/你的镜像文件.iso</code></pre></div><div class="note">把上面命令中的“你的镜像文件.iso”替换为实际文件名。计算的 SHA-256 可以用于复制到其他机器后校验文件是否变化；它不等于验证镜像可启动。</div><h3 id="t7-2">先启动 Live，再执行硬盘安装测试</h3><ol class="steps"><li>把 ISO 写入测试 U 盘，或先在虚拟机里启动；物理机测试更能验证 RTX 5090，但虚拟机通常不能验证真实 GPU 驱动。</li><li>进入 Live 桌面后检查是否能打开桌面、网络是否正常。</li><li>启动 Calamares，将系统安装到测试磁盘/测试机；注意安装界面的分区选择，错误分区会造成数据丢失。</li><li>安装后重启，从硬盘进入新系统并创建正式用户。</li><li>检查登录页面是否只显示正式账户；确认不应残留 <code>liveiso</code> / <code>Live User</code>。</li><li>检查 NVIDIA 驱动与 CUDA：运行 <code>nvidia-smi</code>、<code>nvcc --version</code> 和 <code>dkms status</code>。</li></ol>
+<h3 id="t7-3">目标系统安装后验收命令</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">uname -r
+getent passwd | awk -F: '$3 &gt;= 1000 &amp;&amp; $3 &lt; 60000 {printf "%s UID=%s HOME=%s SHELL=%s\n", $1, $3, $6, $7}'
+getent passwd | grep -E '^(liveiso|live):' || true
+nvidia-smi
+nvcc --version
+dkms status</code></pre></div><div class="note warn">在已安装到硬盘的系统中，如果查到 `liveiso` 或 `live` 账户，说明 Live 用户可能未被清理；若它们只存在于启动 ISO 的 Live 桌面中则属于启动环境的一部分。新版本包含动态 Live User 处理和 Calamares 清理改进，但每个定制镜像都要实际验收，不能只看版本号就认定已修复。</div></section><section class="card" id="sec-trouble"><h2>8. 故障排查与日志</h2><h3 id="t8-1">常见问题速查</h3><div class="table-wrap"><table><thead><tr><th>现象</th><th>先做什么</th><th>说明</th></tr></thead><tbody><tr><td><code>Depends: yq but it is not installable</code></td><td>检查 <code>dpkg -s yq</code>、<code>apt-cache policy yq</code>，核对包来源。</td><td>你的 Ubuntu 22.04 曾缺少可满足的 yq 依赖；这次用单独 DEB 包绕过。避免混加整套 Debian 仓库。</td></tr><tr><td>安装提示将卸载 NVIDIA、CUDA 或内核</td><td>输入 <code>n</code> 取消，并保留完整输出。</td><td>不要为安装封装器牺牲已配置的驱动环境。</td></tr><tr><td><code>eggs: command not found</code></td><td>检查 <code>dpkg -l | grep penguins-eggs</code> 和重新打开终端后 <code>command -v eggs</code>。</td><td>区分安装模拟（<code>apt -s</code>）与真正安装。</td></tr><tr><td>封装停住 / 构建失败</td><td>不要立即清理现场；查看日志、磁盘和挂载点。</td><td>先保存最后 150 行日志，再诊断。</td></tr><tr><td>ISO 生成，但 NVIDIA 驱动无法加载</td><td>在目标系统比对 <code>uname -r</code>、<code>dkms status</code>、Secure Boot 状态。</td><td>`.run` 驱动与内核模块有关；不同内核或安全启动设置可能让模块无法加载。</td></tr><tr><td>安装后出现第二个 Live 用户</td><td>检查实际账户：<code>getent passwd | grep -E '^(liveiso|live):'</code>，并检查 Calamares 安装日志。</td><td>本机已遇到过 Legacy 版本残留 Live User；不要未经检查就直接删除账户。</td></tr><tr><td>ISO 符号链接存在但文件找不到</td><td>用 <code>readlink -f</code> 解析真实路径，查找 <code>/home/eggs</code> 子目录。</td><td>列表里的 ISO 名称有时是链接，不一定是实际数据文件。</td></tr></tbody></table></div><h3 id="t8-2">失败时收集日志</h3><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo tail -n 150 /var/log/penguins-eggs.log
+df -h / /home
+mount | grep -E 'eggs|liveroot|squashfs'</code></pre></div><p>先保存日志再清理。<code>sudo eggs destroy</code> 用于安全卸载构建工作区并清除临时工作目录；不要在尚未找到 ISO 或需要保留失败现场时随便执行。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash">sudo eggs destroy</code></pre></div><div class="note warn">此命令不是日常封装步骤。只在确认需要清理中断的构建工作区、且已保存日志与输出文件之后使用。</div></section><section class="card" id="sec-sources"><h2>9. 参考资料与适用范围</h2><h3 id="t9-1">官方资料与版本记录</h3><p>本文以你的实际环境和界面为起点，并对照 Penguins’ Eggs 官方命令参考、快速入门及发布记录编写。参数可能因小版本更新，请以本机帮助输出为最终依据。</p><ul class="source-links">
+<li><a href="https://penguins-eggs.net/penguins-eggs/user-manual/commands/" target="_blank" rel="noopener">官方命令参考：remaster、config、工具参数</a></li>
+<li><a href="https://www.penguins-eggs.net/penguins-eggs/user-manual/quickstart/" target="_blank" rel="noopener">官方 Quick Start：配置压缩、排除列表、ISO 生成</a></li>
+<li><a href="https://github.com/pieroproietti/penguins-eggs/blob/main/CHANGELOG.md" target="_blank" rel="noopener">官方 CHANGELOG：26.10.5 Live User 配置修复、26.10.19 后的遥测选项、后续维护记录</a></li>
+<li><a href="https://penguins-eggs.net/penguins-eggs/developer-manual/architecture/installer/" target="_blank" rel="noopener">官方安装器架构说明：Live 用户清理、Calamares / Krill</a></li>
+<li><a href="https://github.com/pieroproietti/penguins-eggs-ppa" target="_blank" rel="noopener">官方软件仓库说明</a></li>
+</ul>
+<div class="note"><strong>适用范围：</strong>本手册针对 Ubuntu 22.04 Desktop x86_64、NVIDIA RTX 5090 驱动 595.84、CUDA Toolkit 13.4，以及 penguins-eggs 26.10.22。它是一份操作说明，不代表所有目标硬件都已通过测试。请保留原系统备份，并至少用一台测试机完成 Live 启动、硬盘安装、用户清理和 GPU/CUDA 验收。</div></section>
+</div></main><button class="backtop" title="回到顶部">↑</button><div id="toast">已复制到剪贴板</div>
+<script>
+var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+var sections = tocLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+
+function onScroll(){
+  var pos = window.scrollY;
+  var cur = -1;
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i] && sections[i].offsetTop - 120 <= pos) cur = i;
+  }
+  tocLinks.forEach(function(a, i){ a.classList.toggle('active', i === cur); });
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var pct = max > 0 ? (pos / max) * 100 : 0;
+  document.querySelector('.progress-bar').style.width = pct + '%';
+  document.querySelector('.backtop').classList.toggle('show', pos > 400);
+}
+
+function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(t);
+  }
+  return new Promise(function(resolve, reject){
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); resolve(); } catch(e){ reject(e); }
+    document.body.removeChild(ta);
+  });
+}
+
+function showToast(){
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 1400);
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var code = btn.closest('.code-card').querySelector('code');
+  var text = code.innerText;
+  copyText(text).then(function(){
+    var old = btn.textContent;
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied'); showToast();
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('copied'); }, 1600);
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+document.querySelector('.backtop').addEventListener('click', function(){
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script></body></html>

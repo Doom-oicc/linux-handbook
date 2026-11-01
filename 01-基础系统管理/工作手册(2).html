@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作手册 · 系统测试工程师</title>
+<style>
+:root {
+  --bg: #eefaf5; --bg-2: #f6fcf9; --surface: #ffffff;
+  --text: #1f2937; --text-2: #4b5563; --text-3: #6b7280;
+  --accent: #10b981; --accent-dark: #065f46; --accent-soft: #d7f5e6;
+  --border: rgba(0,0,0,.06);
+  --code-bg: #ffffff; --code-text: #000000;
+  --comment: #b0b8c0; --keyword: #0f766e;
+  --shadow: 0 4px 24px rgba(0,0,0,.04), 0 16px 48px rgba(0,0,0,.06);
+  --radius: 24px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; display: flex; min-height: 100vh;
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 17px;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 50%, #fff 100%);
+  color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased;
+}
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 300px; height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f0faf4 100%);
+  border-right: 1px solid rgba(4,120,87,.14);
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; z-index: 100;
+}
+.sidebar-brand { padding: 26px 22px 20px; border-bottom: 1px solid rgba(4,120,87,.12); background: rgba(255,255,255,.7); }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 800; color: #065f46; letter-spacing: -.01em; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(16,185,129,.22); }
+.brand-sub { font-size: 13px; color: #4b5563; margin-top: 6px; font-weight: 600; }
+.progress { height: 3px; background: #d7f5e6; margin: 0 22px 14px; border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 0 12px 24px; }
+.toc-scroll::-webkit-scrollbar { width: 6px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: #c7e6d8; border-radius: 3px; }
+.toc-scroll::-webkit-scrollbar-track { background: transparent; }
+.toc-group { margin-bottom: 16px; }
+.toc-group-title { display: flex; align-items: center; gap: 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #065f46; font-weight: 800; padding: 10px 10px 6px; }
+.toc-group-title::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+.toc-chap { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #1f2937; text-decoration: none; font-size: 14.5px; line-height: 1.45; font-weight: 600; transition: all .15s ease; }
+.toc-chap:hover { background: #eaf7f0; color: #065f46; }
+.toc-chap.active { background: #d7f5e6; color: #04563e; font-weight: 800; box-shadow: inset 3px 0 0 var(--accent); }
+.chap-num { width: 24px; height: 24px; border-radius: 8px; background: #e2f3ea; color: #065f46; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; border: 1px solid rgba(4,120,87,.16); }
+.toc-chap.active .chap-num { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,210,106,.35); }
+.chap-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toc-sub { display: block; position: relative; padding: 6px 10px 6px 44px; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13.5px; line-height: 1.4; font-weight: 500; transition: all .15s ease; }
+.toc-sub::before { content: ''; position: absolute; left: 30px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: #5ce6ad; }
+.toc-sub:hover { background: #eaf7f0; color: #065f46; }
+.toc-sub.active { background: #d7f5e6; color: #04563e; font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+
+.main { margin-left: 300px; flex: 1; min-width: 0; padding: 50px 60px 120px; }
+.main-inner { max-width: 880px; margin: 0 auto; }
+.page-header { margin-bottom: 40px; }
+.page-header h1 { font-size: 42px; font-weight: 900; letter-spacing: -.04em; margin: 0; color: var(--accent-dark); line-height: 1.1; }
+.page-header .subtitle { color: var(--text-2); font-size: 18px; margin-top: 12px; font-weight: 500; }
+.doc-lead { background: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 24px 30px; box-shadow: 0 4px 24px rgba(0,0,0,.04); color: var(--text-2); font-size: 16px; line-height: 1.75; margin-bottom: 40px; }
+.doc-lead strong { color: var(--accent-dark); }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 40px 46px; box-shadow: var(--shadow); margin-bottom: 34px; transition: transform .25s ease, box-shadow .25s ease; scroll-margin-top: 40px; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06), 0 24px 64px rgba(0,0,0,.08); }
+.card h2 { font-size: 28px; font-weight: 800; margin: 0 0 18px; letter-spacing: -.03em; color: var(--accent-dark); padding-bottom: 14px; border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--accent) 0%, rgba(16,185,129,.22) 70%, transparent 100%) 1; }
+.card h3 { font-size: 21px; font-weight: 700; margin: 26px 0 12px; color: #065f46; display: flex; align-items: center; gap: 10px; }
+.card h3::before { content: ''; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.card h4 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+.card p { margin: 10px 0; color: var(--text-2); font-size: 16px; }
+.card ul, .card ol { margin: 10px 0; padding-left: 24px; color: var(--text-2); font-size: 16px; }
+.card li { margin: 5px 0; }
+.card code:not(.hl) { background: #d7f5e6; color: #065f46; border-radius: 5px; padding: 1px 6px; font-size: 16px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.code-card { border-radius: 12px; overflow: hidden; margin: 14px 0; background: var(--code-bg); border: 1px solid rgba(4,120,87,.14); box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.code-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: #f2faf5; border-bottom: 1px solid rgba(4,120,87,.10); }
+.dots { display: flex; gap: 7px; }
+.dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+.lang { margin-left: 4px; font-size: 13px; color: #065f46; font-weight: 600; letter-spacing: .03em; flex: 1; }
+.copy { background: #ffffff; border: 1px solid rgba(4,120,87,.25); color: #065f46; font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s ease; }
+.copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.copy.copied { background: var(--accent); border-color: var(--accent); color: #fff; }
+.code-card pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+.code-card code { font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; font-size: 15.5px; line-height: 1.7; color: #000000 !important; display: block; }
+.code-card .c { color: #8a94a0 !important; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 12px; border: 1px solid rgba(4,120,87,.12); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: #fff; }
+th { background: #edf9f2; color: #065f46; text-align: left; padding: 10px 14px; font-weight: 700; white-space: nowrap; }
+td { padding: 9px 14px; border-top: 1px solid rgba(4,120,87,.08); color: var(--text-2); }
+td code { background: #d7f5e6; color: #065f46; border-radius: 4px; padding: 0 5px; font-size: 14px; font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Noto Sans SC", sans-serif !important; }
+
+.note { background: #f0faf5; border: 1px solid rgba(4,120,87,.16); border-left: 4px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 14px 0; color: #374151; font-size: 15.5px; line-height: 1.75; }
+.note strong { color: #065f46; }
+.note.warn { background: #fff8ec; border-color: rgba(245,158,11,.3); border-left-color: #f59e0b; color: #78350f; }
+.note.warn strong { color: #b45309; }
+
+.backtop { position: fixed; right: 28px; bottom: 28px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,.45); opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 99; }
+  .backtop.show { opacity: 1; pointer-events: auto; }
+  .backtop:hover { transform: translateY(-3px); }
+  #toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px); background: #065f46; color: #fff; padding: 10px 22px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 200; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 30px 20px 80px; }
+  .card { padding: 28px 22px; }
+  .page-header h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand"><span class="brand-dot"></span>工作手册</div>
+    <div class="brand-sub">系统测试工程师 · 常用命令速查</div>
+  </div>
+  <div class="progress"><div class="progress-bar"></div></div>
+  <nav class="toc-scroll" id="toc"><div class="toc-group"><div class="toc-group-title">系统准备</div><a href="#sec-centos" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">CentOS 7.9 基础配置</span></a><a href="#t1-1" class="toc-sub" data-level="3">时间同步与换源</a><a href="#t1-2" class="toc-sub" data-level="3">安装基础软件</a><a href="#t1-3" class="toc-sub" data-level="3">所有网卡开机自启</a><a href="#sec-ubuntu" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">Ubuntu 基础配置</span></a><a href="#t2-1" class="toc-sub" data-level="3">设置 root 密码</a><a href="#t2-2" class="toc-sub" data-level="3">更换软件源并更新系统</a><a href="#t2-3" class="toc-sub" data-level="3">安装基础软件</a><a href="#t2-4" class="toc-sub" data-level="3">网卡自动获取 IP（Netplan）</a></div><div class="toc-group"><div class="toc-group-title">驱动安装</div><a href="#sec-nvidia" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">NVIDIA 驱动与 CUDA 安装</span></a><a href="#t3-1" class="toc-sub" data-level="3">禁用 Nouveau 开源驱动</a><a href="#t3-2" class="toc-sub" data-level="3">安装 CUDA 并配置环境变量</a><a href="#t3-3" class="toc-sub" data-level="3">编译 GPU 压测工具 gpu_burn</a></div><div class="toc-group"><div class="toc-group-title">存储配置</div><a href="#sec-disk" class="toc-chap"><span class="chap-num">4</span><span class="chap-text">硬盘挂载与开机自动挂载</span></a><a href="#t4-1" class="toc-sub" data-level="3">fstab 永久挂载</a></div><div class="toc-group"><div class="toc-group-title">压测监控</div><a href="#sec-stress" class="toc-chap"><span class="chap-num">5</span><span class="chap-text">系统压测与监控</span></a><a href="#t5-1" class="toc-sub" data-level="3">压测前检查系统资源</a><a href="#t5-2" class="toc-sub" data-level="3">CPU / 内存 / 磁盘压测（stress）</a><a href="#t5-3" class="toc-sub" data-level="3">监控 CPU 温度与资源占用</a><a href="#t5-4" class="toc-sub" data-level="3">GPU 压测（gpu_burn）</a><a href="#t5-5" class="toc-sub" data-level="3">监控显卡状态</a></div></nav>
+</aside>
+<main class="main"><div class="main-inner">
+  <header class="page-header">
+    <h1>工作手册</h1>
+    <div class="subtitle">CentOS / Ubuntu 基础配置 · NVIDIA 驱动 · 硬盘挂载 · 系统压测</div>
+  </header>
+  <div class="doc-lead">本手册为系统测试工程师的<b>日常操作速查</b>：命令已按流程合并、逐条附解释，点击代码块右上角<b>「复制」</b>即可一键复制。涉及版本号、网卡名、UUID 等占位内容，请按现场实际值替换后再执行。</div>
+  <section class="card" id="sec-centos"><h2>1. CentOS 7.9 基础配置</h2><h3 id="t1-1">时间同步与换源</h3><p>装完系统后<b>先校时再换源</b>：时间不对会导致 <code>yum</code> 报证书或元数据错误。以下命令假设你已把准备好的源文件放在 <code>centos7/</code> 目录。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 手动校时（替换成当前时间）</span>
+sudo date -s &quot;2026-09-05 14:30:00&quot;
+<span class="c"># 2) 清空系统默认 yum 源（避免残留源干扰）</span>
+sudo rm -rf /etc/yum.repos.d/*
+<span class="c"># 3) 拷贝准备好的国内源文件到 yum 目录</span>
+sudo cp -r centos7/* /etc/yum.repos.d/
+<span class="c"># 4) 重建 yum 缓存（能看到新源即成功）</span>
+sudo yum makecache</code></pre></div><div class="note">命令解释：<code>date -s</code> 手动设置系统时间；<code>rm -rf</code> 清空默认源；<code>cp -r</code> 拷入源文件；<code>makecache</code> 生成软件源缓存。若机器可联网，更推荐用 <code>chrony</code>/<code>ntpdate</code> 自动同步：<code>sudo yum install -y chrony && sudo systemctl enable --now chrony</code>。</div><h3 id="t1-2">安装基础软件</h3><p>一次性装齐压测、监控、编译、远程管理常用工具。<code>epel-release</code> 是 EPEL 扩展源，很多压测工具要靠它。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 安装 EPEL 扩展源</span>
+sudo yum install epel-release -y
+<span class="c"># 2) 安装常用工具（一行装完）</span>
+sudo yum install stress stress-ng lm_sensors ipmitool htop \
+  make gcc gcc-c++ curl git wget ethtool vim openssh tmux parted -y</code></pre></div><div class="note">工具分类：<strong>压测</strong> stress / stress-ng；<strong>监控</strong> htop / lm_sensors；<strong>远程管理</strong> openssh / ipmitool；<strong>编译</strong> make / gcc / gcc-c++；<strong>磁盘</strong> parted。</div><h3 id="t1-3">所有网卡开机自启</h3><p>CentOS 7 用 <code>ifcfg</code> 文件控制网卡，默认 <code>ONBOOT=no</code> 导致重启后网卡不启动、没有 IP。执行一次即可把全部网卡改为开机自启。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 把所有 ifcfg 文件中 ONBOOT=no 批量替换为 yes</span>
+sed -i &quot;s/ONBOOT=no/ONBOOT=yes/g&quot; /etc/sysconfig/network-scripts/ifcfg-*</code></pre></div><div class="note">解释：<code>-i</code> 原地修改；<code>s/旧/新/g</code> 全局替换；<code>ifcfg-*</code> 匹配所有网卡配置文件（含 ifcfg-lo，替换后对 lo 无影响）。改完 <code>sudo systemctl restart network</code> 或重启即可生效。</div></section><section class="card" id="sec-ubuntu"><h2>2. Ubuntu 基础配置</h2><h3 id="t2-1">设置 root 密码</h3><p>Ubuntu 默认禁用 root 登录，按需开启（测试机常用）。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 设置 root 密码（按提示输入两次）</span>
+sudo passwd root</code></pre></div><h3 id="t2-2">更换软件源并更新系统</h3><p>把默认源替换为中科大 USTC 镜像，然后刷新索引并升级系统，国内下载速度快很多。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 把默认 archive.ubuntu.com 源替换为中科大镜像</span>
+sudo sed -i &quot;s@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g&quot; /etc/apt/sources.list
+<span class="c"># 2) 刷新软件索引 + 升级所有软件包（合并执行）</span>
+sudo apt update &amp;&amp; sudo apt dist-upgrade</code></pre></div><div class="note">解释：<code>sed -i</code> 原地替换；<code>@...@</code> 是分隔符，避免和路径里的 <code>/</code> 冲突；<code>apt update</code> 刷新索引，<code>dist-upgrade</code> 升级系统内核与依赖。也可用 <code>mirrors.aliyun.com</code> / <code>mirrors.tuna.tsinghua.edu.cn</code> 替换。</div><h3 id="t2-3">安装基础软件</h3><p>一行装齐压测、磁盘、网络、编译等测试常用工具。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># Ubuntu 基础工具全家桶（续行符 \ 表示换行继续）</span>
+sudo apt install vim ssh dkms ipmitool htop lm-sensors make gcc g++ \
+  curl wget git stress stress-ng net-tools ethtool btop tmux \
+  fio iperf3 memtester smartmontools nvme-cli -y</code></pre></div><div class="note">重点工具：<code>dkms</code>（内核模块自动重编译，装驱动必装）、<code>fio</code>（磁盘性能压测）、<code>iperf3</code>（网络带宽测试）、<code>smartmontools</code>（硬盘健康检测）、<code>nvme-cli</code>（NVMe SSD 管理）、<code>memtester</code>（内存检测）。</div><h3 id="t2-4">网卡自动获取 IP（Netplan）</h3><p>Ubuntu 18.04+ 用 Netplan 管理网络。若网卡没自动拿到 IP，按以下步骤检查并配置。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 查看所有网卡及其 IP 状态（找没有 IP 的网卡名）</span>
+ip addr show
+<span class="c"># 2) 查看已有 Netplan 配置文件</span>
+ls /etc/netplan/
+<span class="c"># 3) 编辑配置文件（以 00-installer-config.yaml 为例）</span>
+sudo nano /etc/netplan/00-installer-config.yaml</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">yaml</span><button class="copy">复制</button></div><pre><code data-lang="yaml"><span class="c"># 在文件里加入以下内容（eno1 换成你的实际网卡名）</span>
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eno1:
+      dhcp4: true</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 4) 应用配置（无报错即生效，网卡会拿到 DHCP 地址）</span>
+sudo netplan apply
+<span class="c"># 5) 确认 IP 是否获取成功</span>
+ip addr show eno1</code></pre></div><div class="note">解释：<code>dhcp4: true</code> 表示 IPv4 自动获取地址；改完必须 <code>netplan apply</code>。若提示语法错误，检查缩进（必须用空格、层级对齐）。</div></section><section class="card" id="sec-nvidia"><h2>3. NVIDIA 驱动与 CUDA 安装</h2><h3 id="t3-1">禁用 Nouveau 开源驱动</h3><p>NVIDIA 闭源驱动与 Nouveau 冲突，安装前必须先禁用并重启，否则驱动装不上。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 检查是否加载了 nouveau（有输出=未禁用）</span>
+lsmod | grep nouveau
+<span class="c"># 2) 写入黑名单配置文件</span>
+sudo tee /etc/modprobe.d/blacklist-nouveau.conf &lt;&lt; &#x27;EOF&#x27;
+blacklist nouveau
+options nouveau modeset=0
+EOF
+<span class="c"># 3) 刷新内核引导镜像并重启</span>
+sudo update-initramfs -u
+sudo reboot
+<span class="c"># 4) 重启后再次检查（无输出=禁用成功）</span>
+lsmod | grep nouveau</code></pre></div><div class="note">解释：<code>tee</code> 把内容写入文件；<code>blacklist</code> 禁止加载模块，<code>modeset=0</code> 关闭内核模式设置；<code>update-initramfs -u</code> 重新生成引导镜像。</div><h3 id="t3-2">安装 CUDA 并配置环境变量</h3><p>用官方 <code>.run</code> 包安装 CUDA 工具包，随后自动检测版本写入环境变量文件（登录自动加载），最后验证编译工具链。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 安装 CUDA 工具包（--silent 静默安装，--toolkit 只装工具包）</span>
+sudo sh ./cuda_13.2.1_595.58.03_linux.run --silent --toolkit
+<span class="c"># 2) 自动检测已安装的 CUDA 版本</span>
+CUDA_VER=$(ls /usr/local/ | grep -E &quot;^cuda-[0-9.]+&quot; | cut -d- -f2 | sort -V | tail -n 1)
+<span class="c"># 3) 写入环境变量文件（/etc/profile.d/ 下文件登录时自动加载）</span>
+sudo tee /etc/profile.d/cuda.sh &gt; /dev/null &lt;&lt;EOF
+export PATH=/usr/local/cuda-$CUDA_VER/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-$CUDA_VER/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+EOF
+<span class="c"># 4) 当前会话立即生效并验证（能显示版本号即成功）</span>
+source /etc/profile.d/cuda.sh
+nvcc -V</code></pre></div><div class="note">解释：<code>CUDA_VER</code> 自动取已装版本号，避免写死；<code>/etc/profile.d/cuda.sh</code> 让所有新登录会话自动加载 PATH；<code>nvcc -V</code> 验证 CUDA 编译器可用。<code>${PATH:+:${PATH}}</code> 表示在原 PATH 后追加，不影响已有路径。</div><h3 id="t3-3">编译 GPU 压测工具 gpu_burn</h3><p>gpu-burn 是常用 NVIDIA 显卡烤机工具，源码目录里 <code>make</code> 编译即可生成 <code>gpu_burn</code> 可执行文件。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 进入源码目录并编译（需先解压 gpu-burn-master.zip）</span>
+cd gpu-burn/ &amp;&amp; sudo make</code></pre></div></section><section class="card" id="sec-disk"><h2>4. 硬盘挂载与开机自动挂载</h2><h3 id="t4-1">fstab 永久挂载</h3><p>把数据盘（如 <code>/dev/sdb1</code>）永久挂载到 <code>/mnt/sda</code>，重启不失效。用 <b>UUID</b> 而不是设备名，避免盘符变化导致挂载失败。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 创建挂载点</span>
+sudo mkdir -p /mnt/sda
+<span class="c"># 2) 查看分区 UUID（复制输出中的 UUID 值）</span>
+sudo blkid /dev/sdb1
+<span class="c"># 3) 编辑 fstab，在末尾追加一行（格式见下）</span>
+sudo nano /etc/fstab</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">text</span><button class="copy">复制</button></div><pre><code data-lang="text"><span class="c"># fstab 追加行：UUID  挂载点  文件系统  选项  转储  自检</span>
+UUID=a1b2c3d4-1234-5678-9abc-def012345678  /mnt/sda  ntfs  defaults  0  0</code></pre></div><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 4) 验证 fstab 语法并挂载所有未挂载分区（无报错=成功）</span>
+sudo mount -a
+df -h /mnt/sda
+<span class="c"># 5) 卸载（可选，临时解挂用）</span>
+<span class="c"># sudo umount /mnt/sda</span></code></pre></div><div class="note">解释：<code>mount -a</code> 按 fstab 逐条挂载并校验语法，是修改 fstab 后必做的验证步骤；<code>df -h</code> 确认挂载成功。示例文件系统是 <code>ntfs</code>（Windows 盘），Linux 数据盘常用 <code>ext4</code> / <code>xfs</code>。</div><div class="table-wrap"><table><thead><tr><th>字段</th><th>含义</th><th>本例</th></tr></thead><tbody><tr><td>1</td><td>设备标识（UUID 最稳）</td><td><code>UUID=a1b2...</code></td></tr><tr><td>2</td><td>挂载点</td><td><code>/mnt/sda</code></td></tr><tr><td>3</td><td>文件系统类型</td><td><code>ntfs</code></td></tr><tr><td>4</td><td>挂载选项</td><td><code>defaults</code></td></tr><tr><td>5</td><td>是否 dump 备份</td><td><code>0</code></td></tr><tr><td>6</td><td>开机自检顺序</td><td><code>0</code></td></tr></tbody></table></div></section><section class="card" id="sec-stress"><h2>5. 系统压测与监控</h2><h3 id="t5-1">压测前检查系统资源</h3><p>压测前先确认 CPU 核数、内存和磁盘余量，避免压测把机器打崩。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># CPU 逻辑核数（决定 -c 用多大）</span>
+nproc
+<span class="c"># 内存总量与可用量（G 为单位）</span>
+free -h
+<span class="c"># 磁盘剩余空间（压测要留足余量）</span>
+df -h</code></pre></div><h3 id="t5-2">CPU / 内存 / 磁盘压测（stress）</h3><p><code>stress</code> 常用参数：<code>-c</code> CPU 压测进程数；<code>-m</code> 内存压测进程数，<b>总内存占用 = 进程数 × --vm-bytes</b>；<code>-d</code> 磁盘压测进程数，<b>总磁盘占用 = 进程数 × --hdd-bytes</b>；<code>-t</code> 时长；<code>-v</code> 详细输出。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 通用模板</span>
+stress -c CPU核心数 -m 内存进程数 --vm-bytes 1G -d 磁盘进程数 --hdd-bytes 1G -t 时长 -v
+
+<span class="c"># 组合示例：8 核 CPU + 2 个内存进程各 1G + 2 个磁盘进程各 1G，压测 2 分钟</span>
+<span class="c"># 总内存占用 = 2 × 1G = 2G；总磁盘占用 = 2 × 1G = 2G</span>
+stress -c 8 -m 2 --vm-bytes 1G -d 2 --hdd-bytes 1G -t 2m -v</code></pre></div><div class="note">注意：<code>-m 2</code> 是<strong>2 个内存进程</strong>，不是 2G 内存！<code>--vm-bytes</code> 才是单个进程占用的内存大小。CPU 压测进程数不要超过 <code>nproc</code>，总内存建议控制在物理内存 70%~80%，避免 OOM 把系统打死。</div><div class="table-wrap"><table><thead><tr><th>参数</th><th>含义</th><th>注意</th></tr></thead><tbody><tr><td><code>-c N</code></td><td>启动 N 个 CPU 压测进程</td><td>N ≤ nproc</td></tr><tr><td><code>-m N</code></td><td>启动 N 个内存压测进程</td><td>总占用 = N × --vm-bytes</td></tr><tr><td><code>--vm-bytes S</code></td><td>每个内存进程占用大小</td><td>如 1G / 512M</td></tr><tr><td><code>-d N</code></td><td>启动 N 个磁盘压测进程</td><td>总占用 = N × --hdd-bytes</td></tr><tr><td><code>--hdd-bytes S</code></td><td>每个磁盘进程写入大小</td><td>如 1G</td></tr><tr><td><code>-t 2m</code></td><td>压测时长（2 分钟）</td><td>可 10s / 1h</td></tr><tr><td><code>-v</code></td><td>详细输出</td><td>方便观察进度</td></tr></tbody></table></div><h3 id="t5-3">监控 CPU 温度与资源占用</h3><p>压测时另开终端实时监控：<code>sensors</code> 看 CPU/主板温度，<code>htop</code> 交互式查看 CPU/内存占用。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 每 1 秒刷新一次 CPU 温度</span>
+watch -n 1 sensors
+<span class="c"># 交互式资源占用面板（按 q 退出）</span>
+htop</code></pre></div><h3 id="t5-4">GPU 压测（gpu_burn）</h3><p>gpu-burn-master.zip 需先解压，<code>make</code> 编译生成 <code>gpu_burn</code>，然后指定秒数运行烤机。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 1) 解压源码包</span>
+unzip gpu-burn-master.zip
+<span class="c"># 2) 进入目录</span>
+cd gpu-burn-master/
+<span class="c"># 3) 编译生成 gpu_burn 可执行文件</span>
+make
+<span class="c"># 4) 压测 600 秒（10 分钟），全程满载显卡</span>
+./gpu_burn 600</code></pre></div><h3 id="t5-5">监控显卡状态</h3><p>压测时另开终端用 <code>nvidia-smi</code> 监控，重点看温度、功耗、显存占用和利用率是否打满。</p><div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code data-lang="bash"><span class="c"># 每 1 秒刷新一次显卡状态（温度/功耗/显存/利用率）</span>
+watch -n 1 nvidia-smi</code></pre></div></section>
+</div></main>
+<button class="backtop" title="回到顶部">↑</button>
+<div id="toast">已复制到剪贴板</div>
+<script>
+var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+var sections = tocLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+
+function onScroll(){
+  var pos = window.scrollY;
+  var cur = -1;
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i] && sections[i].offsetTop - 120 <= pos) cur = i;
+  }
+  tocLinks.forEach(function(a, i){ a.classList.toggle('active', i === cur); });
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var pct = max > 0 ? (pos / max) * 100 : 0;
+  document.querySelector('.progress-bar').style.width = pct + '%';
+  document.querySelector('.backtop').classList.toggle('show', pos > 400);
+}
+
+function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(t);
+  }
+  return new Promise(function(resolve, reject){
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); resolve(); } catch(e){ reject(e); }
+    document.body.removeChild(ta);
+  });
+}
+
+function showToast(){
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 1400);
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var code = btn.closest('.code-card').querySelector('code');
+  var text = code.innerText;
+  copyText(text).then(function(){
+    var old = btn.textContent;
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied'); showToast();
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('copied'); }, 1600);
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+document.querySelector('.backtop').addEventListener('click', function(){
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

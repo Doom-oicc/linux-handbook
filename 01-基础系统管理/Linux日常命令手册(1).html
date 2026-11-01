@@ -1,0 +1,2201 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Linux 日常命令手册</title>
+<style>
+:root {
+  --bg: #eefaf5;
+  --card: #ffffff;
+  --text: #1f2937;
+  --text-2: #4b5563;
+  --accent: #10b981;
+  --accent-dark: #065f46;
+  --accent-soft: #d7f5e6;
+  --code-text: #000000;
+  --comment: #8a94a0;
+  --warn-bg: #fff7ed;
+  --warn-border: #f97316;
+  --rule: rgba(4,120,87,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans SC",sans-serif;background:linear-gradient(135deg,#eefaf5 0%,#f6fcf9 50%,#ffffff 100%);color:var(--text);font-size:17px;line-height:1.7;min-height:100vh}
+
+/* Sidebar */
+.sidebar{position:fixed;left:0;top:0;width:300px;height:100vh;background:linear-gradient(180deg,#ffffff,#eefaf5);border-right:1px solid var(--rule);z-index:100;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-brand{padding:22px 20px 14px;text-align:center;border-bottom:1px solid var(--rule);flex-shrink:0}
+.sidebar-brand .logo{width:12px;height:12px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:6px;vertical-align:middle}
+.sidebar-brand h1{display:inline;font-size:18px;font-weight:800;color:var(--accent-dark);vertical-align:middle}
+.sidebar-brand .sub{font-size:12px;color:var(--text-2);margin-top:2px;letter-spacing:1px}
+.progress-bar{height:3px;background:var(--accent-soft);flex-shrink:0;position:relative}
+.progress-bar .fill{height:100%;background:var(--accent);width:0%;transition:width .1s linear}
+.sidebar-nav{flex:1;overflow-y:auto;padding:10px 0}
+.sidebar-nav::-webkit-scrollbar{width:6px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:var(--accent-soft);border-radius:3px}
+.sidebar-nav::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.toc-group{padding:4px 16px}
+.toc-group-title{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;padding:10px 0 4px 8px;border-left:2px solid var(--accent);margin-bottom:2px}
+.toc-chap{display:flex;align-items:center;gap:8px;padding:6px 8px;margin:1px 0;border-radius:6px;text-decoration:none;color:var(--text);font-weight:600;font-size:13px;transition:all .15s}
+.toc-chap .chap-num{width:22px;height:22px;border-radius:4px;background:var(--accent-soft);color:var(--accent-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--accent)}
+.toc-chap .chap-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toc-chap.active{background:var(--accent-soft);color:var(--accent-dark);box-shadow:inset 3px 0 0 var(--accent)}
+.toc-chap.active .chap-num{background:var(--accent);color:#fff;border-color:var(--accent)}
+.toc-sub{display:block;padding:4px 8px 4px 38px;font-size:12px;color:var(--text-2);text-decoration:none;position:relative;transition:all .15s}
+.toc-sub::before{content:'';position:absolute;left:24px;top:50%;width:5px;height:5px;border-radius:50%;background:var(--accent-soft);transform:translateY(-50%)}
+.toc-sub.active{color:var(--accent-dark);font-weight:600}
+.toc-sub.active::before{background:var(--accent)}
+.toc-sub:hover{color:var(--accent-dark)}
+.sidebar-nav .toc-group:last-child{padding-bottom:30px}
+
+/* Main */
+.main{margin-left:300px;padding:0;min-height:100vh}
+.page-header{text-align:center;padding:48px 40px 32px;background:linear-gradient(135deg,#eefaf5,#f6fcf9)}
+.page-header h1{font-size:38px;font-weight:900;color:var(--accent-dark);margin-bottom:6px}
+.page-header .sub{font-size:16px;color:var(--text-2)}
+.page-header .desc{font-size:14px;color:var(--text-2);margin-top:8px;max-width:640px;margin-left:auto;margin-right:auto}
+
+.content{max-width:960px;margin:0 auto;padding:24px 32px 80px}
+.card{background:var(--card);border-radius:20px;padding:28px 32px;margin-bottom:24px;box-shadow:0 2px 8px rgba(4,120,87,.06);transition:all .2s;border:1px solid var(--rule)}
+.card:hover{box-shadow:0 6px 20px rgba(4,120,87,.10);transform:translateY(-2px)}
+.card h2{font-size:24px;font-weight:800;color:var(--accent-dark);margin-bottom:10px;padding-left:12px;border-left:4px solid var(--accent)}
+.card h3{font-size:18px;font-weight:700;color:var(--text);margin:16px 0 8px}
+.card p{color:var(--text-2);margin-bottom:10px;font-size:15px}
+.card ul{color:var(--text-2);margin:6px 0 10px 18px;font-size:15px}
+.card li{margin-bottom:3px}
+
+/* Code blocks */
+.code-card{border-radius:12px;overflow:hidden;margin:12px 0;background:var(--card);border:1px solid var(--rule)}
+.code-head{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f2faf5;border-bottom:1px solid var(--rule)}
+.dots{display:flex;gap:6px;flex-shrink:0}
+.dot-r,.dot-y,.dot-g{width:10px;height:10px;border-radius:50%}
+.dot-r{background:#ff5f57}
+.dot-y{background:#febc2e}
+.dot-g{background:#28c840}
+.lang{font-size:12px;color:var(--accent-dark);font-weight:600;flex:1}
+.copy{padding:3px 12px;font-size:12px;border:1px solid var(--accent);border-radius:6px;background:transparent;color:var(--accent-dark);cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.copy:hover{background:var(--accent);color:#fff}
+.copy.copied{background:var(--accent);color:#fff}
+.code-card pre{background:var(--card);padding:14px 18px;overflow-x:auto;margin:0;font-size:15px;line-height:1.6}
+.code-card code{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans SC",sans-serif;font-size:15px;color:var(--code-text);white-space:pre}
+.code-card .c{color:var(--comment);font-style:normal}
+
+/* Table */
+.table-wrap{overflow-x:auto;margin:10px 0;border-radius:10px;border:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--accent-soft);color:var(--accent-dark);padding:8px 12px;text-align:left;font-weight:700;font-size:13px}
+td{padding:7px 12px;border-top:1px solid var(--rule);color:var(--text-2);font-size:14px}
+tr:nth-child(even){background:#f6fcf9}
+td code{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans SC",sans-serif;font-size:13px;color:var(--text);background:var(--accent-soft);padding:1px 4px;border-radius:3px}
+th code{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans SC",sans-serif;font-size:13px;color:var(--accent-dark)}
+
+/* Note / Warning */
+.note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:10px 0;border-radius:0 8px 8px 0;font-size:14px;color:var(--text-2)}
+.note strong{color:var(--accent-dark)}
+.note.warn{border-left-color:var(--warn-border);background:var(--warn-bg)}
+.note.warn strong{color:var(--warn-border)}
+.note code{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans SC",sans-serif;font-size:13px;background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px}
+
+/* Back to top */
+#back-top{position:fixed;bottom:30px;right:30px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.3);opacity:0;visibility:hidden;transition:all .3s;z-index:99}
+#back-top.show{opacity:1;visibility:visible}
+#back-top:hover{transform:scale(1.1);background:var(--accent-dark)}
+
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent-dark);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;opacity:0;visibility:hidden;transition:all .3s;z-index:999}
+.toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+
+/* Mobile */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .content{padding:16px}
+  .card{padding:20px 16px}
+  .page-header{padding:32px 16px}
+  .page-header h1{font-size:28px}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <span class="logo"></span><h1>Linux 日常</h1>
+    <div class="sub">命令手册</div>
+  </div>
+  <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="toc-group"><div class="toc-group-title">基础</div>
+      <a href="#ch1" class="toc-chap"><span class="chap-num">1</span><span class="chap-text">系统基础信息</span></a>
+      <a href="#ch2" class="toc-chap"><span class="chap-num">2</span><span class="chap-text">软件包管理</span></a>
+      <a href="#ch3" class="toc-chap"><span class="chap-num">3</span><span class="chap-text">文件与目录操作</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">文本与权限</div>
+      <a href="#ch4" class="toc-chap"><span class="chap-num">4</span><span class="chap-text">文本查看与编辑</span></a>
+      <a href="#ch5" class="toc-chap"><span class="chap-num">5</span><span class="chap-text">搜索与文本处理</span></a>
+      <a href="#ch6" class="toc-chap"><span class="chap-num">6</span><span class="chap-text">权限与用户管理</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">网络</div>
+      <a href="#ch7" class="toc-chap"><span class="chap-num">7</span><span class="chap-text">网络基础</span></a>
+      <a href="#ch8" class="toc-chap"><span class="chap-num">8</span><span class="chap-text">网络配置</span></a>
+      <a href="#ch9" class="toc-chap"><span class="chap-num">9</span><span class="chap-text">网络测试与诊断</span></a>
+      <a href="#ch10" class="toc-chap"><span class="chap-num">10</span><span class="chap-text">网络端口与SSH</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">服务与日志</div>
+      <a href="#ch11" class="toc-chap"><span class="chap-num">11</span><span class="chap-text">服务管理</span></a>
+      <a href="#ch12" class="toc-chap"><span class="chap-num">12</span><span class="chap-text">日志查看</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">系统监控</div>
+      <a href="#ch13" class="toc-chap"><span class="chap-num">13</span><span class="chap-text">CPU与内存</span></a>
+      <a href="#ch14" class="toc-chap"><span class="chap-num">14</span><span class="chap-text">进程管理</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">存储与硬件</div>
+      <a href="#ch15" class="toc-chap"><span class="chap-num">15</span><span class="chap-text">磁盘与存储</span></a>
+      <a href="#ch16" class="toc-chap"><span class="chap-num">16</span><span class="chap-text">文件系统与NVMe</span></a>
+      <a href="#ch17" class="toc-chap"><span class="chap-num">17</span><span class="chap-text">硬件与PCIe</span></a>
+      <a href="#ch18" class="toc-chap"><span class="chap-num">18</span><span class="chap-text">GPU</span></a>
+      <a href="#ch19" class="toc-chap"><span class="chap-num">19</span><span class="chap-text">IOMMU</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">系统管理</div>
+      <a href="#ch20" class="toc-chap"><span class="chap-num">20</span><span class="chap-text">内核与GRUB</span></a>
+      <a href="#ch21" class="toc-chap"><span class="chap-num">21</span><span class="chap-text">时间与定时任务</span></a>
+      <a href="#ch22" class="toc-chap"><span class="chap-num">22</span><span class="chap-text">压缩传输与脚本</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">压测与巡检</div>
+      <a href="#ch23" class="toc-chap"><span class="chap-num">23</span><span class="chap-text">系统监控与压测</span></a>
+      <a href="#ch24" class="toc-chap"><span class="chap-num">24</span><span class="chap-text">系统巡检与故障排查</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">高级存储</div>
+      <a href="#ch25" class="toc-chap"><span class="chap-num">25</span><span class="chap-text">LVM逻辑卷管理</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">脚本基础</div>
+      <a href="#ch26" class="toc-chap"><span class="chap-num">26</span><span class="chap-text">Shell符号与重定向</span></a>
+      <a href="#ch27" class="toc-chap"><span class="chap-num">27</span><span class="chap-text">sed与awk文本处理</span></a>
+    </div>
+    <div class="toc-group"><div class="toc-group-title">高级管理</div>
+      <a href="#ch28" class="toc-chap"><span class="chap-num">28</span><span class="chap-text">系统调优与Rocky兼容</span></a>
+    </div>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <h1>Linux 日常命令手册</h1>
+    <div class="sub">系统测试工程师日常运维与故障排查参考</div>
+    <div class="desc">涵盖 Ubuntu 24.04、Rocky Linux 10+ 双平台，覆盖日常维护、文件操作、日志排查、网络管理、硬件监控、压测、Shell脚本等场景，每条命令列出参数解释与示例。</div>
+  </div>
+  <div class="content" id="mainContent">
+
+<!-- 第1章 -->
+<section class="card" id="ch1">
+<h2>1. 系统基础信息</h2>
+<p>接手一台新机器后，先查清系统版本、内核、运行时间、用户信息，快速了解机器基本情况。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看Ubuntu发行版详情（包括版本号、代号、描述）</span>
+lsb_release -a
+
+<span class="c"># 查看系统版本（所有发行版通用，比lsb_release更标准）</span>
+cat /etc/os-release
+
+<span class="c"># 查看当前内核版本号，如 6.8.0-45-generic</span>
+uname -r
+
+<span class="c"># 查看全部内核信息（内核名、主机名、版本、架构、系统时间）</span>
+uname -a
+
+<span class="c"># 查看主机名、系统信息、架构、虚拟化类型</span>
+hostnamectl
+
+<span class="c"># 查看当前主机名</span>
+hostname
+
+<span class="c"># 查看系统运行时间、1/5/15分钟平均负载，快速判断繁忙程度</span>
+uptime
+
+<span class="c"># 查看当前登录用户名</span>
+whoami
+
+<span class="c"># 查看当前用户UID、GID、所属组列表</span>
+id
+
+<span class="c"># 查看当前系统时间，支持 +format 自定义格式</span>
+date
+
+<span class="c"># 查看时区、时间同步状态、NTP服务是否启用</span>
+timedatectl</code></pre></div>
+<div class="note"><strong>参数解释：</strong>
+<code>lsb_release -a</code>：-a=all 显示所有信息（Distributor ID/Description/Release/Codename）；<code>uname -r</code>：-r=kernel-release 只显示内核版本号；<code>uname -a</code>：-a=all 显示全部；<code>uptime</code>：显示当前时间、运行时长、登录用户数、平均负载；<code>id</code>：输出uid=用户ID gid=主组ID groups=所属组；<code>date</code>：默认输出当前时间，可加格式如 <code>date +%Y-%m-%d</code>；<code>timedatectl</code>：显示本地时间/UTC/RTC/时区/NTP状态。</div>
+</section>
+
+<!-- 第2章 -->
+<section class="card" id="ch2">
+<h2>2. 软件包管理</h2>
+<p>安装/卸载/更新软件是日常最高频操作，标准顺序永远是 update → install/upgrade。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 刷新软件源列表索引（安装前必做，从/etc/apt/sources.list读取源）</span>
+sudo apt update
+
+<span class="c"># 升级所有已安装包到最新版本，-y 自动确认所有提问</span>
+sudo apt upgrade -y
+
+<span class="c"># 升级并处理依赖变化（可能自动安装/卸载包）</span>
+sudo apt full-upgrade
+
+<span class="c"># 删除不再被依赖的孤立包，释放空间</span>
+sudo apt autoremove
+
+<span class="c"># 清理下载的.deb包缓存（/var/cache/apt/archives/）</span>
+sudo apt clean
+
+<span class="c"># 清理已过期的deb包缓存（比clean更保守）</span>
+sudo apt autoclean
+
+<span class="c"># 列出所有可升级的软件包</span>
+apt list --upgradable
+
+<span class="c"># 查看所有失败状态的服务单元</span>
+systemctl --failed
+
+<span class="c"># 安装软件包，-y 跳过确认，可一次装多个用空格分隔</span>
+sudo apt install -y htop vim
+
+<span class="c"># 卸载包但保留配置文件</span>
+sudo apt remove htop
+
+<span class="c"># 彻底卸载（包括配置文件全部删除）</span>
+sudo apt purge htop
+
+<span class="c"># 重新安装包（修复损坏的安装）</span>
+sudo apt reinstall htop
+
+<span class="c"># 在源中搜索包名</span>
+apt search nginx
+
+<span class="c"># 查看包详细信息（版本、依赖、大小、描述）</span>
+apt show nginx
+
+<span class="c"># 查看已安装包列表，管道grep过滤要找的包</span>
+dpkg -l | grep nginx
+
+<span class="c"># 查看包安装了哪些文件到哪些路径</span>
+dpkg -L nginx
+
+<span class="c"># 安装本地deb包（需先下载到本地）</span>
+sudo dpkg -i package.deb
+
+<span class="c"># 修复dpkg安装后的依赖问题（装完deb必备）</span>
+sudo apt --fix-broken install</code></pre></div>
+<div class="note"><strong>参数解释：</strong>
+<code>apt update</code>：update=刷新源列表，不升级任何包；<code>apt upgrade -y</code>：-y=yes 所有提问默认yes；<code>apt list --upgradable</code>：--upgradable=只显示可升级的包；<code>dpkg -l</code>：-l=list 列出所有已安装包；<code>dpkg -L nginx</code>：-L=List files 列出包安装的文件；<code>dpkg -i</code>：-i=install 安装deb包。</div>
+</section>
+
+<!-- 第3章 -->
+<section class="card" id="ch3">
+<h2>3. 文件与目录操作</h2>
+<p>查看目录结构、复制移动、创建删除。注意 cp 复制目录必须加 -r，rm -rf 极度危险。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 显示当前工作目录的绝对路径（print working directory）</span>
+pwd
+
+<span class="c"># 列出目录内容含隐藏文件，-l长格式 -a包含隐藏文件</span>
+ls -la
+
+<span class="c"># 递归列出所有子目录，看目录树结构</span>
+ls -R /etc
+
+<span class="c"># -h 人类可读文件大小（K/M/G），配合-l使用</span>
+ls -lh
+
+<span class="c"># 进入目录；cd ..返回上一级；cd ~回用户家目录</span>
+cd /data
+
+<span class="c"># 创建目录，-p自动创建不存在的父目录，一次建多级</span>
+mkdir -p /data/logs/2026
+
+<span class="c"># 创建空文件或更新时间戳，文件不存在则新建</span>
+touch test.txt
+
+<span class="c"># 复制目录，-r必须加否则报错（-r=recursive递归）</span>
+cp -r dir1 dir2
+
+<span class="c"># 归档复制，保留链接/权限/属性，等价-dR --preserve=all</span>
+cp -a 源/ 目标/
+
+<span class="c"># 保留源文件权限和时间戳</span>
+cp -p a.txt b.txt
+
+<span class="c"># 重命名文件或移动文件（跨目录就是移动）</span>
+mv old.txt new.txt
+
+<span class="c"># 删除目录，-r递归 -f强制不提示（危险！不可恢复）</span>
+rm -rf /tmp/old
+
+<span class="c"># -i逐个确认删除，安全但慢</span>
+rm -i test.txt
+
+<span class="c"># 查看文件类型（文本/二进制/符号链接/设备文件）</span>
+file /usr/bin/ls
+
+<span class="c"># 查看目录总大小，-s汇总 -h可读单位</span>
+du -sh /data
+
+<span class="c"># 找当前目录下占用最大的前10个目录/文件</span>
+du -sh * | sort -rh | head -10</code></pre></div>
+<div class="note"><strong>参数解释：</strong><code>ls -l</code>：-l=long 长格式（权限/链接数/属主/属组/大小/时间）；<code>ls -a</code>：-a=all 包含.开头的隐藏文件；<code>ls -R</code>：-R=recursive 递归子目录；<code>mkdir -p</code>：-p=parents 父目录不存在时自动创建；<code>cp -r</code>：-r=recursive 递归复制目录；<code>cp -a</code>：-a=archive 归档模式；<code>rm -r</code>：-r=recursive 递归删除目录；<code>rm -f</code>：-f=force 强制删除不提示；<code>du -sh</code>：-s=summary 汇总 -h=human-readable 人类可读。</div>
+</section>
+
+<!-- 第4章 -->
+<section class="card" id="ch4">
+<h2>4. 文本查看与编辑</h2>
+<p>查看日志、读配置文件时最常用 head/tail/less。tail -f 实时跟踪日志是排查故障的黄金用法。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 一次性输出文件全部内容到终端，小文件适用</span>
+cat test.txt
+
+<span class="c"># 查看文件前N行，-n指定行数，默认10行</span>
+head -n 20 test.txt
+
+<span class="c"># 查看文件最后N行，看最新日志最合适</span>
+tail -n 50 test.txt
+
+<span class="c"># 实时跟踪文件末尾追加内容，-f=follow，退出按Ctrl+C</span>
+tail -f /var/log/syslog
+
+<span class="c"># 分页浏览大文件，-N显示行号，/搜索 q退出 空格翻页</span>
+less -N /etc/ssh/sshd_config
+
+<span class="c"># 分页查看，空格翻页，只能往前不能回看</span>
+more /var/log/dmesg
+
+<span class="c"># 统计行数，-l=lines只统计行，快速数日志条数</span>
+wc -l /var/log/syslog</code></pre></div>
+<div class="note"><strong>nano 快捷键：</strong>Ctrl+O 保存 → Enter 确认 → Ctrl+X 退出 → Ctrl+W 搜索 → Ctrl+K 剪切行 → Ctrl+U 粘贴。vim编辑：<code>vim test.txt</code>，按i进入插入模式，ESC回到命令模式，:wq保存退出。</div>
+</section>
+
+<!-- 第5章 -->
+<section class="card" id="ch5">
+<h2>5. 搜索与文本处理</h2>
+<p>查找文件位置、搜索文件内容、替换文本是排查问题最依赖的手段。grep -rn + 2>/dev/null 是黄金组合。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 递归搜索文件内容，-r递归 -n行号，2>/dev/null过滤无权限报错</span>
+grep -rn "error" /var/log/ 2>/dev/null
+
+<span class="c"># -i忽略大小写，匹配error/Error/ERROR所有写法</span>
+grep -i "error" test.log
+
+<span class="c"># -E扩展正则，|表示或，同时搜多个关键字</span>
+grep -Ei "error|fail|warn" test.log
+
+<span class="c"># -v反向匹配，排除含INFO的行，只看非INFO的内容</span>
+grep -v "INFO" test.log
+
+<span class="c"># 按文件名找文件，支持通配符*，2>/dev/null过滤无权限</span>
+find / -name "nginx.conf" 2>/dev/null
+
+<span class="c"># -type f=只找文件，d=目录，l=符号链接</span>
+find / -type f -name "*.log" 2>/dev/null
+
+<span class="c"># -mtime -1=最近1天内修改过，+1=1天前修改</span>
+find / -mtime -1 2>/dev/null
+
+<span class="c"># -size +100M=大于100MB的文件，定位大文件</span>
+find / -size +100M
+
+<span class="c"># 基于预建数据库快搜文件名，速度快但需updatedb更新</span>
+locate nginx.conf
+
+<span class="c"># 查找命令的绝对路径，确认命令是否安装</span>
+which gcc
+
+<span class="c"># 查找命令、源码、man页位置，信息比which多</span>
+whereis bash
+
+<span class="c"># 替换文本，s=substitute g=global全局，不加g只换每行第一个</span>
+sed 's/旧/新/g' file.txt
+
+<span class="c"># -i=in-place直接修改原文件，改前建议备份</span>
+sed -i 's/旧/新/g' file.txt
+
+<span class="c"># 按分隔符取列，-d:冒号分隔 -f1取第一列，经典用法取用户名</span>
+cut -d: -f1 /etc/passwd
+
+<span class="c"># 排序，-r逆序 -h人类可读大小排序（如K/M/G）</span>
+sort -rh file.txt</code></pre></div>
+<div class="note"><strong>参数解释：</strong><code>grep -r</code>：-r=recursive递归子目录；<code>-n</code>：行号；<code>-i</code>：ignore-case忽略大小写；<code>-E</code>：扩展正则表达式；<code>-v</code>：反向匹配；<code>find -name</code>：按文件名；<code>-mtime</code>：按修改时间；<code>-size</code>：按大小；<code>-type</code>：按类型；<code>sed -i</code>：in-place直接改文件，不加-i只在屏幕输出；<code>cut -d</code>：delimiter分隔符；<code>-f</code>：field字段号。</div>
+</section>
+
+<!-- 第6章 -->
+<section class="card" id="ch6">
+<h2>6. 权限与用户管理</h2>
+<p>查看/修改权限、新增/删除用户、提权操作。chmod 数字法 r=4 w=2 x=1 是基础。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 当前登录用户名</span>
+whoami
+
+<span class="c"># 用户UID/GID/所属组</span>
+id
+
+<span class="c"># 当前登录用户列表（含终端、登录时间、IP地址）</span>
+who
+
+<span class="c"># 当前在线用户及正在执行的命令，比who更详细</span>
+w
+
+<span class="c"># 查看最近登录历史记录（/var/log/wtmp）</span>
+last
+
+<span class="c"># 修改当前用户密码（交互式输入两次）</span>
+passwd
+
+<span class="c"># 切换到root shell（用当前用户密码提权，Ubuntu默认方式）</span>
+sudo -i
+
+<span class="c"># 切换用户身份（需要对方密码，Ubuntu默认root禁用）</span>
+su 用户名
+
+<span class="c"># 退出当前shell/root，回退到上一个用户</span>
+exit
+
+<span class="c"># 交互式创建用户+家目录+密码，一步完成</span>
+sudo adduser test
+
+<span class="c"># 删除用户</span>
+sudo deluser test
+
+<span class="c"># 创建新用户组</span>
+sudo groupadd testgrp
+
+<span class="c"># 查看当前用户所属组</span>
+groups
+
+<span class="c"># 把用户加入sudo组，-aG=append+group追加到组，不覆盖已有组</span>
+sudo usermod -aG sudo 用户名
+
+<span class="c"># 查看文件权限（第一列权限位，形如-rw-r--r--）</span>
+ls -l
+
+<span class="c"># 数字法设权限：7=rwx(4+2+1) 5=r-x(4+1) 5=r-x</span>
+chmod 755 test.sh
+
+<span class="c"># 符号法加执行权限，给所有用户（u=user g=group o=other a=all）</span>
+chmod +x test.sh
+
+<span class="c"># 644=属主读写，组和其他只读</span>
+chmod 644 test.txt
+
+<span class="c"># 修改文件属主:属组</span>
+chown user:user test.txt
+
+<span class="c"># -R递归修改整个目录及子文件</span>
+chown -R user:user /data
+
+<span class="c"># 只改文件属组</span>
+chgrp group file
+
+<span class="c"># 查看文件详细属性（inode/权限/ACL/访问/修改/改变时间）</span>
+stat file.txt</code></pre></div>
+<div class="note"><strong>权限数字对照：</strong>r=4 w=2 x=1。<code>755</code> = rwxr-xr-x（属主全权，组和其他只读执行）；<code>644</code> = rw-r--r--（属主读写，其他只读）；<code>700</code> = rwx------（属主全权，其他人无权限）；<code>600</code> = rw-------（属主读写，其他人无权限）。<code>sudo -i</code> vs <code>su -</code>：sudo -i用当前用户密码提权，su -需要root密码。Ubuntu默认禁用root密码，所以sudo是主要方式。</div>
+</section>
+
+<!-- 第7章 -->
+<section class="card" id="ch7">
+<h2>7. 网络基础</h2>
+<p>ip命令替代了ifconfig/route。排障顺序：先看link up/down，再看IP，再看路由。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看所有网卡状态（up/down、MAC地址）</span>
+ip link
+
+<span class="c"># 查看所有网卡IP地址（推荐替代ifconfig）</span>
+ip addr
+
+<span class="c"># ip addr的简写</span>
+ip a
+
+<span class="c"># 查看路由表（默认网关、路由条目）</span>
+ip route
+
+<span class="c"># 查看ARP邻居表（IP→MAC映射）</span>
+ip neigh
+
+<span class="c"># -br=brief 简洁输出，一行一个网卡显示IP</span>
+ip -br addr
+
+<span class="c"># 简洁查看网卡up/down状态</span>
+ip -br link
+
+<span class="c"># 查看PCIe网卡硬件型号</span>
+lspci | grep -i ethernet
+
+<span class="c"># 查看网卡详细信息（速率、双工、自协商、驱动）</span>
+sudo ethtool enp1s0</code></pre></div>
+</section>
+
+<!-- 第8章 -->
+<section class="card" id="ch8">
+<h2>8. 网络配置</h2>
+<p>Ubuntu 24.04 默认使用 Netplan 管理网络（/etc/netplan/*.yaml），改配置后必须 netplan apply。NetworkManager 主要用于桌面版。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看NetworkManager设备状态</span>
+nmcli device status
+
+<span class="c"># 查看网络连接配置</span>
+nmcli connection show
+
+<span class="c"># 查看详细网络信息</span>
+nmcli device show
+
+<span class="c"># 断开网卡（断开后IP会丢失）</span>
+sudo nmcli device disconnect enp1s0
+
+<span class="c"># 重新连接网卡获取DHCP地址</span>
+sudo nmcli device connect enp1s0
+
+<span class="c"># 查看Netplan配置文件列表</span>
+ls /etc/netplan/
+
+<span class="c"># 编辑Netplan配置（改前先备份：cp xxx.yaml xxx.yaml.bak）</span>
+sudo nano /etc/netplan/01-netcfg.yaml
+
+<span class="c"># 应用Netplan配置（改yaml后必须执行才生效，重要！）</span>
+sudo netplan apply
+
+<span class="c"># 测试Netplan配置，超时自动回滚（远程连接时安全）</span>
+sudo netplan try
+
+<span class="c"># 手动获取DHCP地址（用于临时测试）</span>
+sudo dhclient enp1s0
+
+<span class="c"># 释放DHCP地址（-r=release）</span>
+sudo dhclient -r enp1s0</code></pre></div>
+</section>
+
+<!-- 第9章 -->
+<section class="card" id="ch9">
+<h2>9. 网络测试与诊断</h2>
+<p>连通性测试、DNS解析、HTTP服务检查、路由追踪、带宽测试，网络排障全流程。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ICMP测试连通性，-c指定发包次数，不要一直ping</span>
+ping -c 4 8.8.8.8
+
+<span class="c"># 测试域名解析+连通性一次性完成</span>
+ping -c 4 google.com
+
+<span class="c"># DNS查询，+short简洁输出IP地址</span>
+dig +short google.com
+
+<span class="c"># systemd-resolved DNS查询（Ubuntu 24.04默认DNS方式）</span>
+resolvectl query google.com
+
+<span class="c"># 查看DNS配置状态</span>
+resolvectl status
+
+<span class="c"># 测试HTTP响应头，-I=HEAD只返回头信息</span>
+curl -I https://example.com
+
+<span class="c"># 下载文件，-O保持原文件名</span>
+curl -O https://example.com/file.zip
+
+<span class="c"># 下载文件（支持断点续传，-c续传）</span>
+wget https://example.com/file.zip
+
+<span class="c"># 路由路径追踪，比traceroute简单，不需要root</span>
+tracepath 8.8.8.8
+
+<span class="c"># 网络综合诊断（ping+traceroute合并，实时显示每一跳）</span>
+mtr 8.8.8.8
+
+<span class="c"># 安装iperf3网络带宽测试工具</span>
+sudo apt install iperf3 -y
+
+<span class="c"># 服务器模式启动（在服务端运行）</span>
+iperf3 -s
+
+<span class="c"># 客户端连接测试（在客户端运行，连接服务端IP）</span>
+iperf3 -c 192.168.1.100
+
+<span class="c"># -P=parallel 8线程并发，测多线程带宽</span>
+iperf3 -c 192.168.1.100 -P 8
+
+<span class="c"># -t=time 持续10秒，默认只测几秒</span>
+iperf3 -c 192.168.1.100 -t 10</code></pre></div>
+</section>
+
+<!-- 第10章 -->
+<section class="card" id="ch10">
+<h2>10. 网络端口与SSH</h2>
+<p>排查端口占用、SSH远程连接、文件传输，服务器运维必备。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看所有监听端口，-l监听 -n不解析域名 -tTCP -uUDP -p进程</span>
+sudo ss -lntup
+
+<span class="c"># 查看所有TCP连接，-a=all所有连接，不只是监听</span>
+ss -antp
+
+<span class="c"># 过滤指定端口，快速查22端口（SSH）</span>
+sudo ss -lntup | grep 22
+
+<span class="c"># 查看哪个程序占用8080端口，-i=internet</span>
+sudo lsof -i :8080
+
+<span class="c"># 查看占用8080端口的PID，也是端口排查常用</span>
+sudo fuser -n tcp 8080
+
+<span class="c"># 安装SSH服务器</span>
+sudo apt install openssh-server
+
+<span class="c"># 查看SSH服务状态+最近日志</span>
+systemctl status ssh
+
+<span class="c"># 启动/停止/重启SSH</span>
+sudo systemctl restart ssh
+
+<span class="c"># 设置/取消开机自启</span>
+sudo systemctl enable ssh
+
+<span class="c"># SSH登录远程主机</span>
+ssh user@192.168.1.100
+
+<span class="c"># -p指定端口登录（默认22，改过端口时用）</span>
+ssh -p 22 user@192.168.1.100
+
+<span class="c"># 复制文件到远程</span>
+scp test.txt user@192.168.1.100:/tmp/
+
+<span class="c"># -r递归复制目录到远程</span>
+scp -r test/ user@192.168.1.100:/tmp/
+
+<span class="c"># 生成SSH密钥对，-t类型rsa -b位数4096</span>
+ssh-keygen -t rsa -b 4096
+
+<span class="c"># 复制公钥到远程实现免密登录</span>
+ssh-copy-id user@192.168.1.100</code></pre></div>
+<div class="note"><strong>参数解释：</strong><code>ss -lntup</code>：-l=listening监听 -n=numeric不解析 -t=tcp -u=udp -p=process进程；<code>lsof -i :8080</code>：-i=internet指定端口；<code>fuser -n tcp 8080</code>：-n指定网络协议类型；<code>ssh -p 22</code>：-p=port端口；<code>scp -r</code>：-r=recursive递归目录；<code>ssh-keygen -t rsa -b 4096</code>：-t=type类型 -b=bits位数。</div>
+</section>
+
+<!-- 第11章 -->
+<section class="card" id="ch11">
+<h2>11. 服务管理</h2>
+<p>systemctl 管理服务、ufw 配置防火墙、nftables 查看规则。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看服务状态+最近几十行日志，一次出</span>
+systemctl status nginx
+
+<span class="c"># 启动/停止/重启/重新加载配置（reload不中断服务）</span>
+sudo systemctl restart nginx
+
+<span class="c"># 设置/取消开机自启</span>
+sudo systemctl enable nginx
+
+<span class="c"># 查看服务是否已设为开机自启</span>
+systemctl is-enabled nginx
+
+<span class="c"># 查看所有服务单元</span>
+systemctl list-units --type=service
+
+<span class="c"># 查看所有失败服务，快速定位问题</span>
+systemctl --failed
+
+<span class="c"># 查看防火墙状态</span>
+sudo ufw status
+
+<span class="c"># verbose详细状态</span>
+sudo ufw status verbose
+
+<span class="c"># 开启/关闭防火墙</span>
+sudo ufw enable
+
+<span class="c"># 允许22端口TCP（SSH），改了端口就改数字</span>
+sudo ufw allow 22/tcp
+
+<span class="c"># 允许8080端口</span>
+sudo ufw allow 8080/tcp
+
+<span class="c"># 删除规则</span>
+sudo ufw delete allow 8080/tcp
+
+<span class="c"># 带编号查看规则列表，方便按编号删除</span>
+sudo ufw status numbered
+
+<span class="c"># 查看nftables全部规则</span>
+sudo nft list ruleset
+
+<span class="c"># nftables查看表</span>
+sudo nft list tables
+
+<span class="c"># nftables查看链</span>
+sudo nft list chains</code></pre></div>
+</section>
+
+<!-- 第12章 -->
+<section class="card" id="ch12">
+<h2>12. 日志查看</h2>
+<p>Ubuntu 24.04 全面使用 journald 管理日志，同时保留 /var/log/ 传统文件。journalctl 是排查故障的第一入口。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看本次开机以来的所有日志，-b=this boot</span>
+journalctl -b
+
+<span class="c"># 查看上一次启动的日志，-b -1递减</span>
+journalctl -b -1
+
+<span class="c"># 查看内核日志，-k=kernel，等价dmesg</span>
+journalctl -k
+
+<span class="c"># 实时跟踪新日志输出，-f=follow</span>
+journalctl -f
+
+<span class="c"># 只看错误级别及以上日志，-p=priority，快速排障</span>
+journalctl -p err
+
+<span class="c"># 只看警告级别及以上日志</span>
+journalctl -p warning
+
+<span class="c"># 查看指定服务的日志，-u=unit</span>
+journalctl -u ssh
+
+<span class="c"># 实时跟踪指定服务日志</span>
+journalctl -u ssh -f
+
+<span class="c"># 查看最近100行，-n=lines</span>
+journalctl -n 100
+
+<span class="c"># 查看1小时以来的日志，--since支持自然语言</span>
+journalctl --since "1 hour ago"
+
+<span class="c"># 查看今天日志</span>
+journalctl --since today
+
+<span class="c"># 指定时间段：从某天到某天</span>
+journalctl --since "2026-08-01" --until "2026-08-02"
+
+<span class="c"># 查看内核环形缓冲区消息，-T显示人类可读时间</span>
+dmesg -T
+
+<span class="c"># 筛选内核错误和警告，-Ei忽略大小写+扩展正则</span>
+dmesg -T | grep -Ei "error|fail"
+
+<span class="c"># 筛选NVMe相关</span>
+dmesg -T | grep -i nvme
+
+<span class="c"># 筛选PCIe相关</span>
+dmesg -T | grep -i pcie
+
+<span class="c"># 筛选PCIe AER（高级错误报告）</span>
+dmesg -T | grep -i aer
+
+<span class="c"># 筛选网卡相关</span>
+dmesg -T | grep -E "eth|enp|network"
+
+<span class="c"># 筛选GPU相关</span>
+dmesg -T | grep -E "gpu|nvidia|amdgpu"
+
+<span class="c"># 筛选IOMMU相关</span>
+dmesg -T | grep -E "iommu|amd-vi"</code></pre></div>
+<div class="note"><strong>journalctl快速排查技巧：</strong><code>journalctl -p err -b</code> 一条命令看本次开机所有错误，排障起点；<code>-u 服务名</code> 精准定位某个服务；<code>-f</code> 实时跟踪；<code>dmesg -T</code> 看硬件初始化/驱动加载/IO错误。</div>
+</section>
+
+<!-- 第13章 -->
+<section class="card" id="ch13">
+<h2>13. CPU与内存</h2>
+<p>压测前必查CPU核心数和内存总量，避免超配导致OOM。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看CPU详细信息（架构、核心数、线程数、型号、频率、缓存）</span>
+lscpu
+
+<span class="c"># 显示逻辑CPU核心数（stress压测 -c不要超过这个值）</span>
+nproc
+
+<span class="c"># 查看每个CPU核心的详细信息（型号、频率、缓存、flags指令集）</span>
+cat /proc/cpuinfo
+
+<span class="c"># 动态进程监控，按P按CPU排序 M按内存排序 q退出 k杀进程</span>
+top
+
+<span class="c"># 更友好的交互式监控（颜色、鼠标操作、树形视图）</span>
+htop
+
+<span class="c"># 查看内存使用量，-h人类可读（total/used/free/buff/cache/available）</span>
+free -h
+
+<span class="c"># 查看详细内存信息（总量、空闲、缓存、大页、DMA等）</span>
+cat /proc/meminfo
+
+<span class="c"># 虚拟内存统计，1秒刷新（procs/memory/swap/io/system/cpu）</span>
+vmstat 1</code></pre></div>
+</section>
+
+<!-- 第14章 -->
+<section class="card" id="ch14">
+<h2>14. 进程管理</h2>
+<p>查看进程、结束进程、后台运行任务。kill默认TERM信号，-9是最后手段。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看所有进程，--sort=-%mem按内存降序，找出内存大户</span>
+ps aux --sort=-%mem | head -15
+
+<span class="c"># 标准全格式进程列表</span>
+ps -ef
+
+<span class="c"># 按进程名查找PID（pgrep=process grep）</span>
+pgrep nginx
+
+<span class="c"># 查找nginx的PID</span>
+pidof nginx
+
+<span class="c"># 发送TERM信号正常结束进程，给机会清理资源</span>
+kill PID
+
+<span class="c"># 强制杀死进程（SIGKILL），最后手段，可能丢数据</span>
+kill -9 PID
+
+<span class="c"># 按名称批量结束进程</span>
+pkill nginx
+
+<span class="c"># 结束所有同名进程</span>
+killall nginx
+
+<span class="c"># 后台运行任务，退出终端继续跑，>重定向输出 2>&1错误也合并 &后台</span>
+nohup ./test.sh > test.log 2>&1 &
+
+<span class="c"># 查看当前shell后台任务列表</span>
+jobs -l</code></pre></div>
+<div class="note"><strong>信号说明：</strong>默认<code>kill PID</code>发TERM(15)信号，进程可拦截并清理资源后退出；<code>kill -9</code>发KILL(9)信号，进程无法拦截直接强制退出，不清理资源，最后手段。<code>nohup + &</code>保证SSH断开后任务继续运行。</div>
+</section>
+
+<!-- 第15章 -->
+<section class="card" id="ch15">
+<h2>15. 磁盘与存储</h2>
+<p>查看磁盘空间、识别大分区、分区工具、挂载管理。df看整体，du看局部，是两步法定位磁盘满。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 树形查看块设备（磁盘、分区、挂载点）</span>
+lsblk
+
+<span class="c"># 自定义输出列，只看NAME/SIZE/TYPE/FSTYPE/MOUNTPOINTS</span>
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+
+<span class="c"># 查看分区UUID和文件系统类型，配置fstab必用</span>
+blkid
+
+<span class="c"># 查看文件系统磁盘使用率（最常用）</span>
+df -h
+
+<span class="c"># 查看当前目录下每个文件/目录大小，找大文件第一站</span>
+du -sh *
+
+<span class="c"># 查看所有挂载点</span>
+mount
+
+<span class="c"># 树形查看挂载关系，比mount更直观</span>
+findmnt
+
+<span class="c"># 卸载分区，卸载前不要在该目录下操作</span>
+sudo umount /dev/sdb1
+
+<span class="c"># MBR分区工具（传统分区表）</span>
+sudo fdisk /dev/sdb
+
+<span class="c"># GPT分区工具（现代分区表，2TB+磁盘推荐）</span>
+sudo gdisk /dev/sdb
+
+<span class="c"># 高级分区工具（支持GPT/MBR，可调整大小）</span>
+sudo parted /dev/sdb</code></pre></div>
+<div class="note"><strong>磁盘满两步法：</strong>第一步<code>df -h</code>看哪个分区100%，第二步<code>du -sh * | sort -rh | head -10</code>进对应目录找大文件。<code>lsblk</code>看磁盘结构比<code>fdisk -l</code>更直观。fdisk/gdisk/parted都是分区工具，操作前一定用<code>lsblk</code>确认设备名。</div>
+</section>
+
+<!-- 第16章 -->
+<section class="card" id="ch16">
+<h2>16. 文件系统与NVMe</h2>
+<p>格式化、检查文件系统、NVMe固态硬盘管理、SMART健康检查。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 格式化为ext4文件系统（通用，兼容性好）</span>
+sudo mkfs.ext4 /dev/sdb1
+
+<span class="c"># 格式化为xfs（大容量高并发推荐，适合大文件）</span>
+sudo mkfs.xfs /dev/sdb1
+
+<span class="c"># 检查修复文件系统（file system check，卸载后执行）</span>
+sudo fsck /dev/sdb1
+
+<span class="c"># ext4专用文件系统检查，更详细</span>
+sudo e2fsck /dev/sdb1
+
+<span class="c"># 查看ext4文件系统详细信息（块大小、挂载计数、保留块）</span>
+sudo tune2fs -l /dev/sdb1
+
+<span class="c"># 挂载分区到挂载点</span>
+sudo mount /dev/sdb1 /mnt
+
+<span class="c"># -t指定文件系统类型挂载</span>
+sudo mount -t ext4 /dev/sdb1 /mnt
+
+<span class="c"># 卸载</span>
+sudo umount /mnt
+
+<span class="c"># 安装NVMe管理工具</span>
+sudo apt install nvme-cli -y
+
+<span class="c"># 列出所有NVMe设备</span>
+sudo nvme list
+
+<span class="c"># 查看NVMe控制器信息</span>
+sudo nvme id-ctrl /dev/nvme0
+
+<span class="c"># 查看NVMe SMART健康信息（温度、使用率、写入量）</span>
+sudo nvme smart-log /dev/nvme0
+
+<span class="c"># 查看NVMe错误日志</span>
+sudo nvme error-log /dev/nvme0
+
+<span class="c"># 安装SMART工具</span>
+sudo apt install smartmontools -y
+
+<span class="c"># 查看磁盘基本信息，-i=info</span>
+sudo smartctl -i /dev/sda
+
+<span class="c"># 查看全部SMART信息，-a=all（温度、通电时间、重映射扇区等）</span>
+sudo smartctl -a /dev/sda
+
+<span class="c"># 快速健康检查，-H=health，PASSED即健康</span>
+sudo smartctl -H /dev/sda</code></pre></div>
+<div class="note"><strong>参数解释：</strong><code>mkfs.ext4</code>：创建ext4文件系统，mkfs=make filesystem；<code>fsck</code>：file system check文件系统检查，需卸载后执行；<code>tune2fs -l</code>：-l=list列出文件系统参数；<code>mount -t ext4</code>：-t=type指定文件系统类型；<code>smartctl -i</code>：-i=info设备信息；<code>-a</code>：-a=all全部信息；<code>-H</code>：-H=health健康状态。NVMe查看温度：<code>sudo nvme smart-log /dev/nvme0</code>看temperature字段。</div>
+</section>
+
+<!-- 第17章 -->
+<section class="card" id="ch17">
+<h2>17. 硬件与PCIe</h2>
+<p>查看PCI设备、USB、完整硬件信息、BIOS信息。排查硬件故障的第一步。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 列出所有PCI设备（网卡、显卡、NVMe、USB控制器等）</span>
+lspci
+
+<span class="c"># 详细PCI设备信息，-vv=very verbose（含驱动、IRQ、内存地址）</span>
+lspci -vv
+
+<span class="c"># 筛选显卡（VGA/3D/Display三类）</span>
+lspci | grep -E "VGA|3D|Display"
+
+<span class="c"># 筛选网卡</span>
+lspci | grep -i ethernet
+
+<span class="c"># 筛选NVMe固态硬盘</span>
+lspci | grep -i nvme
+
+<span class="c"># 查看USB设备</span>
+lsusb
+
+<span class="c"># 查看完整硬件信息（CPU/内存/磁盘/网络/显卡等，信息量大）</span>
+sudo lshw
+
+<span class="c"># 查看DMI/BIOS信息（主板型号、内存插槽、序列号、BIOS版本）</span>
+sudo dmidecode</code></pre></div>
+</section>
+
+<!-- 第18章 -->
+<section class="card" id="ch18">
+<h2>18. GPU</h2>
+<p>NVIDIA显卡监控全套，AMD ROCm环境查询。nvidia-smi -L先看有几张卡。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看NVIDIA GPU状态（型号、显存、温度、进程、驱动版本）</span>
+nvidia-smi
+
+<span class="c"># 列出所有GPU，-L=List，看有几张卡</span>
+nvidia-smi -L
+
+<span class="c"># 每秒刷新GPU监控，持续跟踪</span>
+watch -n 1 nvidia-smi
+
+<span class="c"># 查看GPU拓扑结构（多GPU间连接方式，NVLink/PCIe）</span>
+nvidia-smi topo -m
+
+<span class="c"># 查看每个GPU上进程的详细使用（PID/显存/类型）</span>
+nvidia-smi pmon
+
+<span class="c"># 查看GPU设备级监控（温度、功率、时钟频率）</span>
+nvidia-smi dmon
+
+<span class="c"># AMD GPU查看PCI设备</span>
+lspci | grep -E "VGA|3D|Display"
+
+<span class="c"># AMD查看驱动加载情况，-k看内核驱动</span>
+lspci -k | grep -A 3 -E "VGA|3D|Display"
+
+<span class="c"># AMD ROCm环境信息</span>
+rocminfo
+
+<span class="c"># AMD ROCm GPU状态监控</span>
+rocm-smi</code></pre></div>
+</section>
+
+<!-- 第19章 -->
+<section class="card" id="ch19">
+<h2>19. IOMMU</h2>
+<p>IOMMU是PCI设备直通（GPU直通、NVMe直通）的前提。确认IOMMU已启用才能做设备直通。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看内核启动参数，确认是否传了iommu=pt amd_iommu=on等</span>
+cat /proc/cmdline
+
+<span class="c"># 查看IOMMU初始化日志，看是否成功启用</span>
+dmesg -T | grep -E "IOMMU|AMD-Vi"
+
+<span class="c"># 从systemd日志查IOMMU，另一种方式</span>
+journalctl -k | grep -E "IOMMU|AMD-Vi"
+
+<span class="c"># 查看IOMMU Group分组，每个组代表一个独立直通单位</span>
+ls /sys/kernel/iommu_groups/
+
+<span class="c"># 查看所有设备在IOMMU Group中的归属列表</span>
+find /sys/kernel/iommu_groups/ -type l</code></pre></div>
+</section>
+
+<!-- 第20章 -->
+<section class="card" id="ch20">
+<h2>20. 内核与GRUB</h2>
+<p>查看/管理内核版本、加载/卸载内核模块、修改GRUB启动参数。内核更新后需重启生效。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看当前内核版本号</span>
+uname -r
+
+<span class="c"># 查看已安装的所有内核（linux-image开头的包）</span>
+dpkg -l | grep linux-image
+
+<span class="c"># 另一种方式查看已安装内核</span>
+apt list --installed | grep linux-image
+
+<span class="c"># 查看当前内核启动参数（GRUB传给内核的选项）</span>
+cat /proc/cmdline
+
+<span class="c"># 查看内核日志</span>
+journalctl -k
+
+<span class="c"># 列出已加载的内核模块</span>
+lsmod
+
+<span class="c"># 加载内核模块（如加载nvidia驱动模块）</span>
+sudo modprobe 模块名
+
+<span class="c"># 卸载内核模块，-r=remove</span>
+sudo modprobe -r 模块名
+
+<span class="c"># 查看模块详细信息（路径、依赖、许可、作者、参数）</span>
+modinfo 模块名
+
+<span class="c"># 编辑GRUB配置（修改后必须update-grub）</span>
+sudo nano /etc/default/grub
+
+<span class="c"># 更新GRUB配置文件（修改grub后执行，重要！）</span>
+sudo update-grub
+
+<span class="c"># 重启系统</span>
+sudo reboot</code></pre></div>
+</section>
+
+<!-- 第21章 -->
+<section class="card" id="ch21">
+<h2>21. 时间与定时任务</h2>
+<p>查看/设置时区、NTP同步、crontab定时任务、systemd定时器。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 查看当前时间</span>
+date
+
+<span class="c"># 自定义格式输出时间，%Y年 %m月 %d日 %H时 %M分 %S秒</span>
+date +%Y-%m-%d_%H:%M:%S
+
+<span class="c"># 查看时区和时间同步状态</span>
+timedatectl
+
+<span class="c"># 查看当前时区</span>
+timedatectl | grep "Time zone"
+
+<span class="c"># 设置时区为上海时间（中国标准时间）</span>
+sudo timedatectl set-timezone Asia/Shanghai
+
+<span class="c"># 开启NTP时间同步（自动与NTP服务器同步）</span>
+sudo timedatectl set-ntp true
+
+<span class="c"># 查看当前用户定时任务列表</span>
+crontab -l
+
+<span class="c"># 编辑当前用户定时任务，格式：分 时 日 月 周 命令</span>
+crontab -e
+
+<span class="c"># 查看系统定时任务目录（cron.daily/hourly/weekly/monthly）</span>
+ls /etc/cron.*
+
+<span class="c"># 查看systemd定时器（替代cron的现代方式）</span>
+systemctl list-timers</code></pre></div>
+</section>
+
+<!-- 第22章 -->
+<section class="card" id="ch22">
+<h2>22. 压缩传输与脚本</h2>
+<p>打包压缩、文件传输、Shell脚本基础、快捷命令，日常操作效率工具。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 打包压缩 tar.gz，-c创建 -z gzip -v显示 -f指定文件（f必须最后）</span>
+tar -czvf backup.tar.gz /data
+
+<span class="c"># 解压 tar.gz，-x解压 -z gzip -v显示 -f文件</span>
+tar -xzvf backup.tar.gz
+
+<span class="c"># 解压tar.xz，-J xz格式</span>
+tar -xJvf test.tar.xz
+
+<span class="c"># 解压zip到当前目录</span>
+unzip test.zip
+
+<span class="c"># 解压zip到指定目录，-d指定目录</span>
+unzip test.zip -d /target/
+
+<span class="c"># 压缩zip，-r递归压缩目录</span>
+zip -r backup.zip /data
+
+<span class="c"># 解压7z</span>
+7z x test.7z
+
+<span class="c"># 复制文件到远程服务器</span>
+scp file user@IP:/tmp/
+
+<span class="c"># -r递归复制目录到远程</span>
+scp -r dir user@IP:/tmp/
+
+<span class="c"># 本地同步，-a归档 -v显示进度</span>
+rsync -av source/ target/
+
+<span class="c"># 远程同步到服务器</span>
+rsync -av source/ user@IP:/target/
+
+<span class="c"># 下载文件</span>
+wget URL
+
+<span class="c"># 下载文件，-O保持原文件名</span>
+curl -O URL</code></pre></div>
+<div class="note"><strong>Shell脚本基础：</strong><code>#!/bin/bash</code> 脚本第一行Shebang指定解释器；<code>chmod +x test.sh</code> 加执行权限；<code>./test.sh</code> 执行脚本；<code>echo $PATH</code> 查看PATH环境变量；<code>env</code> 查看所有环境变量；<code>export TEST=123</code> 设置临时环境变量。</div>
+<div class="note"><strong>快捷命令：</strong><code>clear</code> 清屏（Ctrl+L）；<code>history</code> 查看命令历史；<code>!!</code> 执行上一条命令；<code>Ctrl+R</code> 搜索历史命令；<code>Ctrl+C</code> 终止当前命令；<code>Ctrl+Z</code> 暂停当前命令；<code>fg</code> 恢复暂停任务到前台；<code>command &</code> 后台运行命令；<code>jobs</code> 查看后台任务列表；<code>exit</code> 退出shell。</div>
+</section>
+
+<!-- 第23章 -->
+<section class="card" id="ch23">
+<h2>23. 系统监控与压测</h2>
+<p>系统资源监控（top/htop/vmstat/iostat）、磁盘IO、网络带宽、简单压测工具。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># 实时进程监控，P按CPU M按内存 q退出</span>
+top
+
+<span class="c"># 高级监控（颜色、鼠标操作、树形视图）</span>
+htop
+
+<span class="c"># 内存使用量</span>
+free -h
+
+<span class="c"># 系统资源统计（CPU/内存/IO/swap），1秒刷新</span>
+vmstat 1
+
+<span class="c"># 磁盘I/O统计，-x扩展统计，1秒刷新（需安装sysstat）</span>
+iostat -x 1
+
+<span class="c"># 实时磁盘I/O监控（需安装iotop）</span>
+iotop
+
+<span class="c"># 磁盘空间</span>
+df -h
+
+<span class="c"># 目录大小</span>
+du -sh *
+
+<span class="c"># 系统负载</span>
+uptime
+
+<span class="c"># CPU信息</span>
+lscpu
+
+<span class="c"># 简单磁盘写入测试，写入1GB文件</span>
+dd if=/dev/zero of=test bs=1M count=1000
+
+<span class="c"># 网络带宽测试服务器端</span>
+iperf3 -s
+
+<span class="c"># 网络带宽测试客户端</span>
+iperf3 -c 192.168.1.100</code></pre></div>
+<div class="note"><strong>压测注意事项：</strong>CPU压测<code>-c</code>不超过<code>nproc</code>；内存总占用=进程数×--vm-bytes，不超过物理内存80%避免OOM；磁盘压测用<code>fio</code>更专业，简单测试用<code>dd</code>；网络用<code>iperf3</code>，服务器先<code>-s</code>，客户端再<code>-c IP</code>。</div>
+</section>
+
+<!-- 第24章 -->
+<section class="card" id="ch24">
+<h2>24. 系统巡检与故障排查</h2>
+<p>接手一台新机器的快速健康检查、硬件故障排查思路、危险命令提醒。</p>
+<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== 一键基础检查（快速体检） =====</span>
+hostnamectl && uname -r && uptime
+
+<span class="c"># 硬件</span>
+lscpu && free -h && lsblk && df -h
+
+<span class="c"># 网络</span>
+ip -br addr && ip route && lspci
+
+<span class="c"># 服务</span>
+systemctl --failed && journalctl -k -b -p err
+
+<span class="c"># ===== 硬件故障快速排查 =====</span>
+<span class="c"># 查看PCIe错误</span>
+dmesg -T | grep -E "pcie|aer"
+
+<span class="c"># 查看NVMe错误</span>
+dmesg -T | grep -E "nvme|I/O error"
+
+<span class="c"># 查看网卡错误</span>
+dmesg -T | grep -E "eth|enp|network"
+
+<span class="c"># 查看GPU错误</span>
+dmesg -T | grep -E "nvidia|amdgpu|gpu"
+
+<span class="c"># 查看IOMMU</span>
+dmesg -T | grep -E "iommu|amd-vi"
+
+<span class="c"># ===== 危险命令提醒（执行前必须确认设备名） =====</span>
+<span class="c"># 先确认磁盘设备：lsblk</span>
+lsblk
+
+<span class="c"># rm -rf：强制递归删除，不可恢复</span>
+<span class="c"># mkfs：格式化会清空所有数据</span>
+<span class="c"># fdisk/gdisk/parted：分区操作会破坏数据</span>
+<span class="c"># dd：直接写入磁盘，稍有不慎整盘报废</span>
+<span class="c"># sudo rm -rf /：绝对不能执行，删光系统</span>
+<span class="c"># sudo dd if=xxx of=/dev/sdX：确认of=目标磁盘正确</span></code></pre></div>
+<div class="note warn"><strong>危险操作必读：</strong><code>rm -rf</code>、<code>mkfs</code>、<code>dd</code>、<code>fdisk</code> 这些命令执行前，一定先用 <code>lsblk</code> 确认设备名正确。生产环境不要轻易执行 <code>rm -rf /</code>、<code>dd if=xxx of=/dev/sda</code> 这类操作，稍有不慎数据全丢。</div>
+	</section>
+	
+	<!-- 第25章 -->
+	<section class="card" id="ch25">
+	<h2>25. LVM逻辑卷管理</h2>
+	<p>LVM（Logical Volume Manager）将物理磁盘抽象为卷组，实现灵活的动态扩容缩容、快照和条带化。PV→VG→LV 三层结构，支持在线扩容，生产环境标配。</p>
+	<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== PV（物理卷）操作 =====</span>
+	<span class="c"># 创建物理卷，将磁盘分区初始化为LVM格式</span>
+	sudo pvcreate /dev/sdb1 /dev/sdc1
+	
+	<span class="c"># 查看所有PV概要，一行一个（PV_Name/VG_Name/Fmt/Attr/PSize/PFree）</span>
+	sudo pvs
+	
+	<span class="c"># 查看PV详细信息（PE大小、总数、已用、UUID等）</span>
+	sudo pvdisplay /dev/sdb1
+	
+	<span class="c"># 扫描系统所有PV</span>
+	sudo pvscan
+	
+	<span class="c"># 移除PV（须先将其从VG中移除）</span>
+	sudo pvremove /dev/sdb1
+	
+	<span class="c"># ===== VG（卷组）操作 =====</span>
+	<span class="c"># 创建卷组，将PV加入VG</span>
+	sudo vgcreate vg_data /dev/sdb1 /dev/sdc1
+	
+	<span class="c"># 查看所有VG概要</span>
+	sudo vgs
+	
+	<span class="c"># 查看VG详细信息（PE大小、总数、已分配、空闲等）</span>
+	sudo vgdisplay vg_data
+	
+	<span class="c"># 扩展VG：添加新PV到VG</span>
+	sudo vgextend vg_data /dev/sdd1
+	
+	<span class="c"># 缩减VG：从VG中移除PV（需先pvmove迁移数据）</span>
+	sudo pvmove /dev/sdd1
+	sudo vgreduce vg_data /dev/sdd1
+	
+	<span class="c"># 删除VG</span>
+	sudo vgremove vg_data
+	
+	<span class="c"># ===== LV（逻辑卷）操作 =====</span>
+	<span class="c"># 创建逻辑卷，-L指定大小，-n指定名称</span>
+	sudo lvcreate -L 100G -n lv_data vg_data
+	
+	<span class="c"># 创建LV时使用全部空闲空间，-l 100%FREE</span>
+	sudo lvcreate -l 100%FREE -n lv_data vg_data
+	
+	<span class="c"># 查看所有LV概要</span>
+	sudo lvs
+	
+	<span class="c"># 查看LV详细信息（LV路径、块设备、条带、快照等）</span>
+	sudo lvdisplay /dev/vg_data/lv_data
+	
+	<span class="c"># 在线扩展LV（无需卸载），+20G=增加20G</span>
+	sudo lvextend -L +20G /dev/vg_data/lv_data
+	
+	<span class="c"># 指定LV大小（绝对大小，如扩展到120G）</span>
+	sudo lvextend -L 120G /dev/vg_data/lv_data
+	
+	<span class="c"># 扩展后需同步文件系统（ext4用resize2fs，xfs用xfs_growfs）</span>
+	sudo resize2fs /dev/vg_data/lv_data     <span class="c"># ext4</span>
+	sudo xfs_growfs /mount/point             <span class="c"># xfs（需挂载点）</span>
+	
+	<span class="c"># 缩减LV（危险！必须先卸载并检查文件系统，ext4可用）</span>
+	sudo umount /dev/vg_data/lv_data
+	sudo e2fsck -f /dev/vg_data/lv_data
+	sudo resize2fs /dev/vg_data/lv_data 80G  <span class="c"># 先缩文件系统</span>
+	sudo lvreduce -L 80G /dev/vg_data/lv_data <span class="c"># 再缩LV</span>
+	
+	<span class="c"># 删除LV（危险！数据全丢）</span>
+	sudo lvremove /dev/vg_data/lv_data
+	
+	<span class="c"># 重命名LV</span>
+	sudo lvrename vg_data lv_data lv_backup
+	
+	<span class="c"># ===== LVM快照 =====</span>
+	<span class="c"># 创建快照（源LV的只读/读写时间点副本，-s=snapshot）</span>
+	sudo lvcreate -L 10G -s -n lv_data_snap /dev/vg_data/lv_data
+	
+	<span class="c"># 查看快照状态（Data%快速增长表示源数据变化大）</span>
+	sudo lvs
+	
+	<span class="c"># 从快照恢复（回滚到快照时间点，需先卸载源LV）</span>
+	sudo umount /dev/vg_data/lv_data
+	sudo lvconvert --merge /dev/vg_data/lv_data_snap
+	
+	<span class="c"># 删除快照</span>
+	sudo lvremove /dev/vg_data/lv_data_snap
+	
+	<span class="c"># ===== 完整LVM创建流程示例 =====</span>
+	<span class="c"># 1. 分区：fdisk创建分区，类型设为8e（Linux LVM）</span>
+	<span class="c"># 2. 初始化PV：sudo pvcreate /dev/sdb1 /dev/sdc1</span>
+	<span class="c"># 3. 创建VG：sudo vgcreate vg_data /dev/sdb1 /dev/sdc1</span>
+	<span class="c"># 4. 创建LV：sudo lvcreate -L 200G -n lv_data vg_data</span>
+	<span class="c"># 5. 格式化：sudo mkfs.ext4 /dev/vg_data/lv_data</span>
+	<span class="c"># 6. 挂载：sudo mount /dev/vg_data/lv_data /data</span>
+	<span class="c"># 7. fstab写入：UUID=$(blkid -s UUID -o value /dev/vg_data/lv_data)</span></code></pre></div>
+	<div class="note"><strong>LVM核心概念：</strong>PV（Physical Volume）= 物理磁盘或分区；VG（Volume Group）= PV的池子，统一分配空间；LV（Logical Volume）= 从VG中切出的逻辑磁盘，可格式化挂载。PE（Physical Extent）= 最小分配单元，默认4MB。<strong>关键命令对照：</strong><code>pvcreate</code>→创建PV，<code>vgcreate</code>→创建VG，<code>lvcreate</code>→从VG中创建LV。扩展LV后必须<code>resize2fs</code>/<code>xfs_growfs</code>更新文件系统，否则新空间不可用。</div>
+	<div class="note warn"><strong>LVM注意事项：</strong>LV缩减极度危险，必须卸载→检查→缩文件系统→缩LV，顺序不能错；xfs文件系统不支持缩减，只能扩不能缩。快照空间按需分配，Data%达到100%快照自动失效。生产环境建议LV扩展后先用<code>df -h</code>确认生效。</div>
+	</section>
+	
+	<!-- 第26章 -->
+		<section class="card" id="ch26">
+		<h2>26. Shell脚本符号与重定向</h2>
+		<p>Shell脚本中的重定向、管道、变量、通配符、控制结构是编写自动化脚本的基石。以下逐条详细解释每个符号的作用、用法和典型场景，适用于 Ubuntu 24.04 和 Rocky Linux 10+。</p>
+		
+		<h3>► 标准输入输出重定向（&lt; &gt; &gt;&gt; &lt;&lt; &lt;&lt;&lt; 2&gt; 2&gt;&amp;1 &amp;&gt;）</h3>
+		<p>Linux进程默认打开三个文件描述符：0=stdin（标准输入，默认键盘）、1=stdout（标准输出，默认屏幕）、2=stderr（标准错误，默认屏幕）。重定向就是改变这些默认流向。</p>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== > 输出重定向（覆盖） =====</span>
+		<span class="c"># 将stdout写入文件，覆盖原有内容。文件不存在则创建。等价于 1></span>
+		echo "hello" > file.txt          <span class="c"># 写入"hello"到file.txt，原内容被清空</span>
+		ls /tmp > dir_list.txt           <span class="c"># 将ls输出保存到文件</span>
+		&gt; file.txt                      <span class="c"># 危险！立即清空file.txt（相当于truncate）</span>
+		
+		<span class="c"># ===== >> 输出重定向（追加） =====</span>
+		<span class="c"># 将stdout追加到文件末尾，不覆盖原有内容。常用于日志持续写入</span>
+		echo "new line" >> file.txt      <span class="c"># 追加到末尾</span>
+		date >> /var/log/myscript.log    <span class="c"># 记录执行时间到日志</span>
+		
+		<span class="c"># 对比：> 覆盖，>> 追加。重要配置文件千万别用 > 误覆盖</span>
+		
+		<span class="c"># ===== < 输入重定向 =====</span>
+		<span class="c"># 从文件读取内容作为命令的stdin。等价于 0<</span>
+		cat &lt; file.txt                   <span class="c"># 读取file.txt作为cat的输入</span>
+		sort &lt; unsorted.txt              <span class="c"># 从文件读入数据排序输出</span>
+		tr 'a-z' 'A-Z' &lt; /etc/hostname  <span class="c"># 读取文件内容转为大写</span>
+		mail -s "主题" user &lt; content.txt <span class="c"># 将文件内容作为邮件正文发送</span>
+		
+		<span class="c"># ===== << Here Document（内联文档） =====</span>
+		<span class="c"># 在脚本中嵌入多行文本作为stdin。语法：<< 分隔符 ... 分隔符</span>
+		<span class="c"># 分隔符可用任意字符串（常用EOF/END），前后必须一致</span>
+		cat &lt;&lt; EOF
+		这是第一行文本
+		这是第二行文本
+		这是第三行文本
+		EOF
+		
+		<span class="c"># <<- 带Tab缩进的Here Document（忽略行首Tab字符，空格不忽略）</span>
+		cat &lt;&lt;- END
+		    <span class="c"># 这行前面的Tab会被忽略</span>
+		    对齐的代码块
+		END
+		
+		<span class="c"># << 'EOF' 单引号包裹分隔符->不展开变量和命令替换</span>
+		cat &lt;&lt; 'EOF'                    <span class="c"># $HOME 保持原文</span>
+		PATH=$HOME/bin
+		TOKEN=$(date +%s)
+		EOF
+		
+		<span class="c"># Here Document + > 生成配置文件并写入</span>
+		cat &lt;&lt; EOF &gt; /etc/myapp.conf
+		[server]
+		port=8080
+		host=0.0.0.0
+		EOF
+		
+		<span class="c"># ===== <<< Here String =====</span>
+		<span class="c"># 将字符串作为stdin传给命令（比 echo | 命令 更高效，不创建子进程）</span>
+		grep "error" &lt;&lt;&lt; "this is an error message"  <span class="c"># 直接匹配字符串</span>
+		tr 'a-z' 'A-Z' &lt;&lt;&lt; "hello world"             <span class="c"># 输出 HELLO WORLD</span>
+		md5sum &lt;&lt;&lt; "test"                             <span class="c"># 计算字符串MD5</span>
+		IFS=: read -r user uid &lt;&lt;&lt; "root:0"            <span class="c"># 分割字符串到变量</span>
+		
+		<span class="c"># ===== 2> 标准错误重定向 =====</span>
+		<span class="c"># 2> 只重定向stderr（fd=2）。1是stdout，2是stderr，可独立重定向</span>
+		grep root /etc/shadow 2> error.log  <span class="c"># 权限错误写入error.log，屏幕无输出</span>
+		ls /exist /notexist 1> out.log 2> err.log  <span class="c"># stdout和stderr分别保存</span>
+		
+		<span class="c"># ===== 2>&1 合并重定向 =====</span>
+		<span class="c"># 将stderr合并到stdout，一起输出到同一地方</span>
+		<span class="c"># 语法：N>&M 表示把fd N重定向到fd M，&表示后面是fd而非文件名</span>
+		cmd > all.log 2>&1               <span class="c"># stdout→all.log，stderr也→all.log</span>
+		<span class="c"># 注意顺序：必须先写 > all.log 再写 2>&1，不能颠倒！</span>
+		<span class="c"># 错误：cmd 2>&1 > all.log（stderr先指向屏幕，再改stdout到文件）</span>
+		
+		<span class="c"># ===== &> 简化合并重定向（bash 4+） =====</span>
+		<span class="c"># 等价于 > file 2>&1，更简洁</span>
+		cmd &> all.log                   <span class="c"># 同时重定向stdout和stderr到文件</span>
+		cmd &>> all.log                  <span class="c"># 追加方式合并重定向</span>
+		
+		<span class="c"># ===== /dev/null 黑洞 =====</span>
+		<span class="c"># 写入的数据全部丢弃，读取返回EOF。常用于静默执行丢弃输出</span>
+		cmd &> /dev/null                 <span class="c"># 丢弃所有输出（静默执行）</span>
+		cmd 2> /dev/null                <span class="c"># 只丢弃错误信息，正常输出仍显示</span></code></pre></div>
+		
+		<h3>► 管道 | 和命令链接</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== | 管道（Pipe） =====</span>
+		<span class="c"># 将前一个命令的stdout直接作为后一个命令的stdin</span>
+		<span class="c"># 管道是同步的：前后命令同时运行，前者输出实时流入后者</span>
+		<span class="c"># 管道只传递stdout，不影响stderr（stderr默认仍显示在屏幕）</span>
+		ps aux | grep nginx              <span class="c"># 列出所有进程，过滤含nginx的行</span>
+		ls /etc | head -5                <span class="c"># 列出/etc目录，取前5行</span>
+		
+		<span class="c"># 管道链：可串联多个命令，数据依次流过每个命令</span>
+		dmesg | grep -i error | head -20  <span class="c"># 内核日志→筛错误→取前20行</span>
+		cat /var/log/syslog | grep "fail" | wc -l  <span class="c"># 统计失败日志行数</span>
+		cat access.log | awk '{print $1}' | sort | uniq -c | sort -rn  <span class="c"># IP访问排行</span>
+		
+		<span class="c"># tee：数据"三通"，一份走管道，一份写入文件</span>
+		ps aux | tee process.log | grep nginx  <span class="c"># 保存全部进程列表+过滤nginx</span>
+		dmesg | tee dmesg_all.log | grep -i error  <span class="c"># 保存全部内核日志+只看错误</span>
+		
+		<span class="c"># |& 同时传递stdout和stderr（bash 4+，等价 2>&1 |）</span>
+		cmd |& grep error                <span class="c"># 同时搜索stdout和stderr中的error</span>
+		
+		<span class="c"># 管道的退出码：默认只取最后一个命令的退出码</span>
+		<span class="c"># set -o pipefail 后，任一命令失败整个管道返回非0</span>
+		set -o pipefail
+		cmd1 | cmd2 | cmd3               <span class="c"># 任一失败，$? 为非0</span>
+		
+		<span class="c"># ===== ; 分号——顺序执行 =====</span>
+		<span class="c"># 不管前一条命令成功或失败，都执行下一条。退出码是最后一条的退出码</span>
+		ls /nonexist; echo "继续执行"     <span class="c"># 即使ls失败，echo仍会执行</span>
+		cd /tmp; ls -la; pwd             <span class="c"># 连续执行三条命令</span>
+		
+		<span class="c"># ===== && 逻辑与——前一条成功（退出码=0）才执行后一条 =====</span>
+		<span class="c"># 常用于依赖链：编译成功后安装，安装成功后测试</span>
+		make &amp;&amp; make install &amp;&amp; echo "安装成功"  <span class="c"># 全部成功才打印</span>
+		./configure &amp;&amp; make &amp;&amp; sudo make install  <span class="c"># 经典源码安装三步</span>
+		[ -d /data ] &amp;&amp; cd /data &amp;&amp; ls -la     <span class="c"># 目录存在才进入并列出</span>
+		
+		<span class="c"># ===== || 逻辑或——前一条失败（退出码≠0）才执行后一条 =====</span>
+		<span class="c"># 常用于错误处理、降级方案、默认值</span>
+		cd /data || mkdir -p /data       <span class="c"># 如果cd失败则创建目录</span>
+		ping -c 1 8.8.8.8 || echo "网络不通"  <span class="c"># ping失败则报错</span>
+		grep "root" /etc/passwd || echo "未找到"  <span class="c"># 没找到则输出信息</span>
+		
+		<span class="c"># ===== && 与 || 组合 =====</span>
+		<span class="c"># 实现类似 if-then-else 的效果（注意：成功分支失败时也会触发||）</span>
+		command &amp;&amp; echo "成功" || echo "失败"  <span class="c"># 成功/失败二选一</span>
+		make &amp;&amp; make install || { echo "编译失败"; exit 1; }  <span class="c"># 失败则报错退出</span></code></pre></div>
+		
+		<h3>► 变量定义、引用与展开</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== 变量赋值 =====</span>
+		<span class="c"># 规则：等号两边不能有空格！变量名只能用字母、数字、下划线，不能以数字开头</span>
+		name="Linux"                     <span class="c"># 正确</span>
+		version = "10"                   <span class="c"># 错误！等号两边有空格会被当成命令</span>
+		
+		<span class="c"># ===== 变量引用：$var 或 ${var} =====</span>
+		<span class="c"># ${var} 用花括号明确边界，避免歧义，强烈建议一直使用</span>
+		echo $name                       <span class="c"># 输出 Linux</span>
+		echo ${name}_server              <span class="c"># 输出 Linux_server（不加花括号_name整体被当成变量名）</span>
+		
+		<span class="c"># ===== 双引号 vs 单引号 vs 反斜杠 =====</span>
+		<span class="c"># 双引号 ""：保留空格和特殊字符形式，但展开变量和命令替换</span>
+		greeting="Hello, $name"          <span class="c"># 输出 Hello, Linux</span>
+		msg="当前时间: $(date)"           <span class="c"># $()命令替换会执行</span>
+		multi="第一行
+		第二行"                          <span class="c"># 双引号内可直接换行</span>
+		
+		<span class="c"># 单引号 ''：保留所有字符原文，不展开变量，不执行命令替换，不解析转义</span>
+		literal='Hello, $name'           <span class="c"># 输出 Hello, $name（$name保持原文）</span>
+		literal2='没有$(date)\n'          <span class="c"># 输出 没有$(date)\n（不执行不转义）</span>
+		
+		<span class="c"># 反斜杠 \：转义紧跟其后的一个特殊字符，使其失去特殊含义</span>
+		echo "价格: \$100"               <span class="c"># 输出 价格: $100（\$阻止变量展开）</span>
+		echo "文件路径: /home/user/\"test\""  <span class="c"># 双引号内用\"表示字面量双引号</span>
+		
+		<span class="c"># ===== $() 命令替换 =====</span>
+		<span class="c"># 将命令的stdout作为值赋给变量。推荐 $() 而非反引号，可嵌套、视觉清晰</span>
+		now=$(date +%Y-%m-%d)            <span class="c"># now=2026-09-07</span>
+		files=$(ls *.txt | wc -l)        <span class="c"># 统计txt文件数（可嵌套）</span>
+		up=$(uptime | awk '{print $3}' | tr -d ',')  <span class="c"># 提取运行时间</span>
+		
+		<span class="c"># ===== $(( )) 算术展开 =====</span>
+		<span class="c"># 支持整数运算：+ - * / % **（乘方），不支持小数</span>
+		echo $((3 + 5 * 2))              <span class="c"># 13（先乘后加，遵循四则运算优先级）</span>
+		echo $((2 ** 10))                <span class="c"># 1024（2的10次方）</span>
+		count=$((count + 1))             <span class="c"># 自增1，等价 ((count++))</span>
+		((count++))                      <span class="c"># 简化写法，变量值+1</span>
+		((a = 3, b = 5, c = a * b))     <span class="c"># 逗号表达式，c=15</span></code></pre></div>
+		
+		<h3>► 特殊变量详解</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># $? 上一条命令的退出码：0=成功，1~255=失败（具体值代表不同错误类型）</span>
+		ls /etc/passwd; echo "退出码: $?"  <span class="c"># 0（成功）</span>
+		ls /nonexist; echo "退出码: $?"   <span class="c"># 2（文件不存在，errno=2）</span>
+		ls /etc/shadow; echo "退出码: $?" <span class="c"># 1（权限不足，errno=1）</span>
+		
+		<span class="c"># $0 脚本自身的名称（或当前shell的名称）</span>
+		<span class="c"># $1, $2, ..., $9 位置参数（第1~9个参数）</span>
+		<span class="c"># ${10}, ${11} 第10个以上参数必须用花括号</span>
+		<span class="c"># $# 传递给脚本的参数个数</span>
+		<span class="c"># $@ 所有参数列表（每个参数独立，for循环时保留引号分隔）</span>
+		<span class="c"># $* 所有参数作为一个字符串（for循环时全部合并成一个字符串）</span>
+		echo "脚本名: $0, 参数个数: $#, 所有参数: $@"
+		echo "第一个参数: $1, 第二个: $2"
+		for arg in "$@"; do echo "参数: $arg"; done  <span class="c"># 正确：逐个遍历</span>
+		for arg in "$*"; do echo "参数: $arg"; done  <span class="c"># 错误：$* 把全部参数当成一个字符串</span>
+		
+		<span class="c"># $$ 当前Shell进程的PID（常用于生成临时文件名避免重名）</span>
+		<span class="c"># $! 最后一个后台进程的PID（用于 wait $! 等待后台任务完成）</span>
+		<span class="c"># $- 当前Shell的option标志位（如 himBHs）</span>
+		<span class="c"># $_ 上一个命令的最后一个参数</span>
+		tmpfile="/tmp/tmp.$$"            <span class="c"># 临时文件，如 /tmp/tmp.12345</span>
+		nohup longtask.sh &amp;              
+		wait $!                          <span class="c"># 等待后台任务完成</span>
+		echo "后台PID: $!"</code></pre></div>
+		
+		<h3>► 变量默认值与字符串操作</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== 变量默认值 =====</span>
+		<span class="c"># ${var:-default} 如果var未设置或为空，使用default（var本身不变）</span>
+		<span class="c"># ${var:=default} 如果var未设置或为空，设为default并返回</span>
+		<span class="c"># ${var:?error} 如果var未设置或为空，输出错误信息并退出</span>
+		<span class="c"># ${var:+value} 如果var已设置且非空，使用value；否则空</span>
+		echo ${PORT:-8080}               <span class="c"># 如果$PORT未设置，输出8080（PORT不变）</span>
+		: ${PORT:=8080}                  <span class="c"># 如果$PORT未设置，设为8080</span>
+		DB_HOST=${DB_HOST:?"DB_HOST未设置，退出"}  <span class="c"># 未设置则报错退出</span>
+		echo ${FLAG:+已启用}              <span class="c"># 如果$FLAG非空，输出"已启用"</span>
+		
+		<span class="c"># ===== 字符串截取 =====</span>
+		<span class="c"># ${#var} 字符串长度</span>
+		<span class="c"># ${var:offset:len} 截取子串（offset从0开始）</span>
+		filename="/path/to/file.tar.gz"
+		echo ${#filename}                <span class="c"># 字符串长度</span>
+		echo ${filename:0:5}             <span class="c"># /path（前5个字符）</span>
+		echo ${filename: -7}             <span class="c"># ar.gz（倒取7个字符，注意空格）</span>
+		
+		<span class="c"># ===== 模式匹配删除 =====</span>
+		<span class="c"># ${var#pattern} 从开头删除最短匹配</span>
+		<span class="c"># ${var##pattern} 从开头删除最长匹配</span>
+		<span class="c"># ${var%pattern} 从结尾删除最短匹配</span>
+		<span class="c"># ${var%%pattern} 从结尾删除最长匹配</span>
+		echo ${filename#*/}              <span class="c"># path/to/file.tar.gz（去掉最短前缀 */）</span>
+		echo ${filename##*/}             <span class="c"># file.tar.gz（去掉最长前缀 */，取文件名）</span>
+		echo ${filename%.*}              <span class="c"># /path/to/file.tar（去掉最短后缀 .*）</span>
+		echo ${filename%%.*}             <span class="c"># /path/to/file（去掉最长后缀 .*）</span>
+		
+		<span class="c"># ===== 字符串替换 =====</span>
+		<span class="c"># ${var/old/new} 替换第一个匹配</span>
+		<span class="c"># ${var//old/new} 替换所有匹配</span>
+		<span class="c"># ${var/#old/new} 替换开头匹配</span>
+		<span class="c"># ${var/%old/new} 替换结尾匹配</span>
+		echo ${filename/a/A}             <span class="c"># /pAth/to/file.tar.gz（替换第一个a→A）</span>
+		echo ${filename//a/A}            <span class="c"># /pAth/to/file.tAr.gz（替换所有a→A）</span>
+		echo ${filename/#\/path/\/data}  <span class="c"># /data/to/file.tar.gz（替换开头路径）</span>
+		echo ${filename/%.tar.gz/.zip}   <span class="c"># /path/to/file.zip（替换结尾）</span></code></pre></div>
+		
+		<h3>► 通配符（Glob）与花括号扩展</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== * 通配符 =====</span>
+		<span class="c"># * 匹配任意长度的任意字符（包括空字符）。排除以.开头的隐藏文件</span>
+		ls *.txt                         <span class="c"># 匹配所有.txt结尾的普通文件</span>
+		ls /etc/*.conf                   <span class="c"># 匹配/etc下所有.conf结尾的文件</span>
+		rm -f *.log                      <span class="c"># 删除当前目录所有.log文件（危险！）</span>
+		cp *.html /backup/               <span class="c"># 复制所有html文件到backup目录</span>
+		
+		<span class="c"># 匹配隐藏文件：. 开头的文件需要用 .* 或 .[!.]*</span>
+		ls .*                            <span class="c"># 匹配所有隐藏文件（包括 . 和 ..）</span>
+		ls .[!.]*                        <span class="c"># 匹配隐藏文件但不包括 . 和 ..</span>
+		
+		<span class="c"># ===== ? 通配符 =====</span>
+		<span class="c"># ? 匹配正好一个任意字符（不能为空）</span>
+		ls test.?                        <span class="c"># 匹配 test.a, test.b, test.1 等（但test.txt不行）</span>
+		ls file??.txt                    <span class="c"># 匹配 file01.txt, fileab.txt 等（两个字符）</span>
+		
+		<span class="c"># ===== [abc] 字符集通配符 =====</span>
+		<span class="c"># 匹配括号内任意一个字符，支持范围 [0-9] [a-z] [A-Z]</span>
+		ls file[0-9].log                 <span class="c"># 匹配 file0.log ~ file9.log</span>
+		ls [abc]*                        <span class="c"># 匹配以a/b/c开头的所有文件</span>
+		ls [a-zA-Z]*                     <span class="c"># 匹配以字母开头的所有文件</span>
+		
+		<span class="c"># ===== [!abc] 排除字符集 =====</span>
+		<span class="c"># 匹配不在括号内的字符，也可写作 [^abc]</span>
+		ls [!0-9]*                       <span class="c"># 匹配不以数字开头的文件</span>
+		ls file[!0-9].log                <span class="c"># 匹配file后跟非数字的.log文件</span>
+		
+		<span class="c"># ===== shopt 扩展通配符 =====</span>
+		shopt -s extglob                 <span class="c"># 先开启扩展模式</span>
+		<span class="c"># ?(pattern) 匹配0或1次，*(pattern) 匹配0或多次</span>
+		<span class="c"># +(pattern) 匹配1或多次，@(pattern) 精确匹配1次</span>
+		<span class="c"># !(pattern) 不匹配pattern</span>
+		ls *.!(txt|log)                  <span class="c"># 匹配不以.txt或.log结尾的文件</span>
+		ls +([0-9]).txt                  <span class="c"># 匹配纯数字文件名的.txt文件</span>
+		
+		<span class="c"># ===== {} 花括号扩展 =====</span>
+		<span class="c"># 注意：花括号扩展在通配符之前展开，且不要求文件存在</span>
+		<span class="c"># {a,b,c} 逗号分隔——生成多个字符串</span>
+		mkdir -p /data/{logs,backup,config}  <span class="c"># 一次创建三个目录</span>
+		touch test_{a,b,c}.txt               <span class="c"># 创建 test_a.txt test_b.txt test_c.txt</span>
+		mv file.{txt,md}                     <span class="c"># 等价 mv file.txt file.md</span>
+		
+		<span class="c"># {1..5} 序列——生成数字或字母序列</span>
+		echo {1..10}                     <span class="c"># 1 2 3 4 5 6 7 8 9 10</span>
+		echo {01..10}                    <span class="c"># 01 02 ... 10（补零）</span>
+		echo {a..z}                      <span class="c"># a b c ... z</span>
+		echo {1..10..2}                  <span class="c"># 1 3 5 7 9（步进2）</span>
+		
+		<span class="c"># 花括号嵌套——笛卡尔积生成所有组合</span>
+		echo {a,b}{1,2}                  <span class="c"># a1 a2 b1 b2</span>
+		mkdir -p {dev,prod}/{web,db}     <span class="c"># 创建 dev/web dev/prod prod/web prod/db 四个目录</span></code></pre></div>
+		
+		<h3>► 子Shell、代码块、测试结构</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== ( ) 子Shell =====</span>
+		<span class="c"># 在子Shell中执行命令，不改变当前Shell的环境</span>
+		<span class="c"># 子Shell中的cd/变量赋值/export只影响子Shell，父Shell不受影响</span>
+		(cd /tmp &amp;&amp; ls -la)             <span class="c"># 在/tmp中执行ls，但当前目录不变</span>
+		(export PATH=/tmp:$PATH; python3 -V)  <span class="c"># 临时修改PATH，不影响当前Shell</span>
+		(echo "子Shell"; exit 1)         <span class="c"># exit只退出子Shell，不影响父Shell</span>
+		
+		<span class="c"># ===== { } 代码块 =====</span>
+		<span class="c"># 在当前Shell中执行命令列表，影响当前环境</span>
+		<span class="c"># 注意：{ 后必须有空格，} 前必须有分号或换行</span>
+		{ cd /tmp; ls -la; }             <span class="c"># 当前目录会变成/tmp</span>
+		{ echo "开始"; date; echo "结束"; } > log.txt  <span class="c"># 整个代码块的输出重定向到文件</span>
+		
+		<span class="c"># ===== [ ] 与 [[ ]] 测试结构 =====</span>
+		
+		<span class="c"># [ 条件 ] POSIX标准，所有sh都支持。注意：</span>
+		<span class="c"># [ 后和 ] 前必须有空格！变量必须用引号保护（否则空值会语法错误）</span>
+		[ -f /etc/passwd ] &amp;&amp; echo "文件存在"  <span class="c"># 测试普通文件是否存在</span>
+		[ "$name" = "Linux" ] &amp;&amp; echo "匹配"   <span class="c"># 字符串相等比较（=两边有空格）</span>
+		[ $count -gt 10 ] &amp;&amp; echo "大于10"     <span class="c"># 数值比较（-gt=greater than）</span>
+		[ -z "$var" ] &amp;&amp; echo "变量为空"       <span class="c"># 测试空字符串</span>
+		
+		<span class="c"># [[ 条件 ]] bash增强版——支持 && || 正则=~ 通配符==</span>
+		<span class="c"># 优点：不需要为变量加引号（空值安全），支持更多运算符，允许&& ||</span>
+		[[ "$name" == "Linux"* ]] &amp;&amp; echo "以Linux开头"  <span class="c"># 通配符模式匹配</span>
+		[[ $count -gt 10 &amp;&amp; $count -lt 100 ]] &amp;&amp; echo "10-100之间"  <span class="c"># 多条件</span>
+		[[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] &amp;&amp; echo "是IP格式"  <span class="c"># 正则匹配</span>
+		[[ -f /etc/passwd &amp;&amp; -r /etc/passwd ]] &amp;&amp; echo "可读的passwd文件"  <span class="c"># 多条件</span>
+		
+		<span class="c"># ===== 常用文件测试运算符 =====</span>
+		[ -f /path ]                     <span class="c"># 文件存在且是普通文件</span>
+		[ -d /path ]                     <span class="c"># 目录存在</span>
+		[ -e /path ]                     <span class="c"># 路径存在（文件或目录）</span>
+		[ -s /path ]                     <span class="c"># 文件存在且非空（size>0）</span>
+		[ -r /path ]                     <span class="c"># 当前用户可读</span>
+		[ -w /path ]                     <span class="c"># 当前用户可写</span>
+		[ -x /path ]                     <span class="c"># 当前用户可执行</span>
+		[ -L /path ]                     <span class="c"># 是符号链接</span>
+		[ file1 -nt file2 ]              <span class="c"># file1比file2新（newer than）</span>
+		[ file1 -ot file2 ]              <span class="c"># file1比file2旧（older than）</span>
+		
+		<span class="c"># ===== 常用字符串/数值比较运算符 =====</span>
+		[ "$s1" = "$s2" ]                <span class="c"># 字符串相等（==在[]中也可用）</span>
+		[ "$s1" != "$s2" ]               <span class="c"># 字符串不等</span>
+		[ -z "$s" ]                      <span class="c"># 字符串为空（zero length）</span>
+		[ -n "$s" ]                      <span class="c"># 字符串非空（non-zero length）</span>
+		[ $a -eq $b ]                    <span class="c"># 数值相等（equal）</span>
+		[ $a -ne $b ]                    <span class="c"># 数值不等（not equal）</span>
+		[ $a -gt $b ]                    <span class="c"># 大于（greater than）</span>
+		[ $a -ge $b ]                    <span class="c"># 大于等于（greater or equal）</span>
+		[ $a -lt $b ]                    <span class="c"># 小于（less than）</span>
+		[ $a -le $b ]                    <span class="c"># 小于等于（less or equal）</span></code></pre></div>
+		
+		<h3>► 控制结构（if/for/while/case）与函数</h3>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== if/then/elif/else/fi =====</span>
+		<span class="c"># if后面跟命令，以命令退出码为判断依据（0=真，非0=假）</span>
+		if [ -f /etc/passwd ]; then
+		    echo "passwd文件存在"
+		else
+		    echo "passwd文件不存在"
+		fi
+		
+		<span class="c"># 多条件分支</span>
+		if [ "$1" = "start" ]; then
+		    systemctl start nginx
+		elif [ "$1" = "stop" ]; then
+		    systemctl stop nginx
+		else
+		    echo "用法: $0 {start|stop}"
+		    exit 1
+		fi
+		
+		<span class="c"># ===== for 循环 =====</span>
+		<span class="c"># 遍历列表</span>
+		for i in {1..5}; do
+		    echo "第 $i 次"
+		done
+		
+		<span class="c"># 遍历当前目录所有txt文件</span>
+		for f in *.txt; do
+		    [ -f "$f" ] || continue       <span class="c"># 跳过没有匹配项时*号本身</span>
+		    echo "处理: $f"
+		    wc -l "$f"
+		done
+		
+		<span class="c"># 遍历参数列表</span>
+		for arg in "$@"; do
+		    echo "参数: $arg"
+		done
+		
+		<span class="c"># C风格for循环</span>
+		for ((i=0; i&lt;10; i++)); do
+		    echo "i=$i"
+		done
+		
+		<span class="c"># ===== while 循环 =====</span>
+		count=1
+		while [ $count -le 5 ]; do
+		    echo "第 $count 次"
+		    count=$((count + 1))
+		done
+		
+		<span class="c"># 逐行读取文件（推荐用法，避免cat子Shell问题）</span>
+		while IFS= read -r line; do
+		    echo "行: $line"
+		done &lt; file.txt
+		
+		<span class="c"># ===== until 循环 =====</span>
+		<span class="c"># 条件为假时循环，直到条件为真停止</span>
+		until ping -c 1 8.8.8.8 &amp;&gt; /dev/null; do
+		    echo "等待网络连接..."
+		    sleep 2
+		done
+		echo "网络已通"
+		
+		<span class="c"># ===== case 多分支 =====</span>
+		<span class="c"># 模式支持通配符，| 分隔多个模式，;; 结束分支</span>
+		case "$1" in
+		    start)
+		        systemctl start nginx
+		        ;;
+		    stop)
+		        systemctl stop nginx
+		        ;;
+		    restart|reload)              <span class="c"># 匹配多个模式</span>
+		        systemctl restart nginx
+		        ;;
+		    *)                           <span class="c"># 默认匹配所有</span>
+		        echo "用法: $0 {start|stop|restart}"
+		        exit 1
+		        ;;
+		esac
+		
+		<span class="c"># ===== 函数 =====</span>
+		<span class="c"># 两种定义方式：function 函数名{} 或 函数名(){} </span>
+		<span class="c"># 函数必须先定义后调用，return返回退出码（0~255）</span>
+		function log_info() {
+		    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1"
+		}
+		log_info "系统启动完成"
+		
+		<span class="c"># 函数返回值：通过 $? 获取，或通过 echo 捕获到变量</span>
+		add() { echo $(( $1 + $2 )); }
+		result=$(add 3 5)                <span class="c"># 函数输出捕获到变量</span>
+		echo "结果: $result"             <span class="c"># 8</span>
+		
+		<span class="c"># 函数中 return 返回退出码</span>
+		check_root() {
+		    [ "$(id -u)" -eq 0 ] &amp;&amp; return 0 || return 1
+		}
+		check_root &amp;&amp; echo "是root用户" || echo "不是root用户"
+		
+		<span class="c"># ===== 数组 =====</span>
+		fruits=("苹果" "香蕉" "橘子")     <span class="c"># 数组定义</span>
+		echo ${fruits[0]}                <span class="c"># 苹果（索引从0开始）</span>
+		echo ${fruits[@]}                <span class="c"># 苹果 香蕉 橘子（所有元素）</span>
+		echo ${#fruits[@]}               <span class="c"># 3（数组长度）</span>
+		fruits+=("葡萄")                 <span class="c"># 追加元素</span>
+		unset fruits[1]                  <span class="c"># 删除元素</span>
+		for fruit in "${fruits[@]}"; do
+		    echo "水果: $fruit"
+		done
+		
+		<span class="c"># ===== 其他Shell技巧 =====</span>
+		<span class="c"># trap：捕获信号执行清理操作</span>
+		cleanup() { rm -f /tmp/tmp.$$; echo "已清理"; }
+		trap cleanup EXIT                <span class="c"># 脚本退出时自动执行cleanup</span>
+		trap 'echo "收到Ctrl+C"' INT     <span class="c"># 捕获Ctrl+C</span>
+		
+		<span class="c"># source / . 加载外部脚本或配置文件</span>
+		source /etc/profile              <span class="c"># 加载环境变量</span>
+		. ./config.sh                    <span class="c"># 加载配置文件（点号是source的简写）</span>
+		
+		<span class="c"># shift：左移位置参数，$2变成$1</span>
+		while [ $# -gt 0 ]; do
+		    echo "处理参数: $1"
+		    shift
+		done
+		
+		<span class="c"># read：从stdin读取输入</span>
+		read -p "请输入名字: " username   <span class="c"># -p 提示符</span>
+		read -t 5 -p "5秒内输入: " input  <span class="c"># -t 超时秒数</span>
+		read -s -p "密码: " password      <span class="c"># -s 静默模式（不回显）</span>
+		
+		<span class="c"># set -e 脚本遇到错误立即退出（errexit）</span>
+		<span class="c"># set -u 使用未定义变量时报错（nounset）</span>
+		<span class="c"># set -x 调试模式，执行每条命令前打印（xtrace）</span>
+		set -eux                         <span class="c"># 脚本开头使用，严格模式</span>
+		set +x                           <span class="c"># 关闭调试模式</span></code></pre></div>
+		<div class="note"><strong>符号速查表：</strong>
+		<code>&lt;</code> 输入重定向 &nbsp; <code>&gt;</code> 覆盖输出 &nbsp; <code>&gt;&gt;</code> 追加输出 &nbsp; <code>2&gt;</code> 错误重定向 &nbsp; <code>2&gt;&amp;1</code> 合并输出 &nbsp; <code>&amp;&gt;</code> 全部重定向（简化） &nbsp; <code>&lt;&lt; EOF</code> Here Document &nbsp; <code>&lt;&lt;&lt;</code> Here String &nbsp; <code>|</code> 管道 &nbsp; <code>|&amp;</code> 管道含stderr &nbsp; <code>;</code> 顺序执行 &nbsp; <code>&amp;&amp;</code> 且 &nbsp; <code>||</code> 或 &nbsp; <code>$()</code> 命令替换 &nbsp; <code>$(( ))</code> 算术运算 &nbsp; <code>${}</code> 变量引用（含截取/替换/默认值） &nbsp; <code>[]</code> 测试（POSIX） &nbsp; <code>[[]]</code> 增强测试（bash特有） &nbsp; <code>()</code> 子Shell &nbsp; <code>{}</code> 代码块/花括号扩展 &nbsp; <code>$?</code> 退出码 &nbsp; <code>$0</code> 脚本名 &nbsp; <code>$1</code> 第一个参数 &nbsp; <code>$#</code> 参数个数 &nbsp; <code>$$</code> 当前PID &nbsp; <code>$!</code> 后台PID。</div>
+		<div class="note warn"><strong>常见陷阱：</strong>1) 变量赋值<code>name=value</code>等号两边不能有空格！2) <code>[</code> 后和 <code>]</code> 前必须有空格；3) <code>&gt;</code> 会清空原文件，<code>&gt; file.txt</code> 直接清空文件；4) <code>2&gt;&amp;1</code> 必须写在 <code>&gt; file</code> 之后，<code>cmd 2&gt;&amp;1 &gt; file</code> 顺序错误；5) <code>while read</code> 推荐 <code>done &lt; file</code> 而非 <code>cat file | while</code>（避免子Shell导致变量丢失）；6) 双引号保护变量展开中的空格，<code>"$var"</code> 比 <code>$var</code> 安全；7) 单引号不展开任何变量和命令；8) <code>[[ ]]</code> 中变量不加引号也是安全的，但 <code>[ ]</code> 中必须加引号。</div>
+		</section>
+		
+		<!-- 第27章 -->
+		<section class="card" id="ch27">
+		<h2>27. sed与awk文本处理</h2>
+		<p>sed（流编辑器Stream Editor）和 awk（Aho-Weinberger-Kernighan）是Linux文本处理的两大神器。sed适合行级替换、删除、插入；awk适合按列分割、统计分析、格式化输出。两者结合几乎能处理所有文本格式。以下命令在 Ubuntu 24.04 和 Rocky Linux 10+ 上完全兼容。</p>
+		
+		<h3>► sed 流编辑器详解</h3>
+		<p>sed逐行处理文本，核心操作是 s（替换）、d（删除）、p（打印）、a（追加）、i（插入）。默认不修改原文件，-i 才直接修改。</p>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== sed 替换命令 s =====</span>
+		<span class="c"># 语法：sed 's/查找模式/替换文本/标志' 文件</span>
+		<span class="c"># 标志：g=全局替换（不加g只替换每行第一个匹配），i=忽略大小写</span>
+		sed 's/error/ERROR/' file.log     <span class="c"># 每行第一个error→ERROR</span>
+		sed 's/error/ERROR/g' file.log    <span class="c"># 全局替换，所有error→ERROR</span>
+		sed 's/error/ERROR/gi' file.log   <span class="c"># 全局+忽略大小写（Error/ERROR/error全换）</span>
+		sed 's/error/ERROR/2' file.log    <span class="c"># 只替换每行第2个匹配</span>
+		
+		<span class="c"># ===== sed 行范围（Addressing） =====</span>
+		<span class="c"># 指定行号或模式范围，只对范围内的行执行操作</span>
+		sed '2s/error/ERROR/g' file.log   <span class="c"># 只替换第2行</span>
+		sed '2,5s/error/ERROR/g' file.log <span class="c"># 替换第2~5行</span>
+		sed '2,$s/error/ERROR/g' file.log <span class="c"># 替换第2行到末尾（$=最后一行）</span>
+		sed '10,+5s/error/ERROR/g' file.log  <span class="c"># 第10行开始往后5行（10~15行）</span>
+		sed '/^#/d' config.conf          <span class="c"># 删除所有以#开头的注释行</span>
+		sed '/^$/,/^end/d' file.txt      <span class="c"># 删除从空行到"end"开头的行之间的所有行</span>
+		
+		<span class="c"># ===== sed 删除命令 d =====</span>
+		sed '3d' file.txt                 <span class="c"># 删除第3行</span>
+		sed '3,5d' file.txt               <span class="c"># 删除第3~5行</span>
+		sed '/^#/d' /etc/ssh/sshd_config  <span class="c"># 删除所有注释行</span>
+		sed '/^$/d' file.txt              <span class="c"># 删除所有空行</span>
+		sed '/error/d' file.log           <span class="c"># 删除所有含error的行</span>
+		sed '/debug/,/end_debug/d' file.log  <span class="c"># 删除从debug到end_debug之间的区域</span>
+		
+		<span class="c"># ===== sed 打印命令 p =====</span>
+		<span class="c"># -n 取消默认输出（默认会打印所有行加匹配行，-n只打印匹配行）</span>
+		sed -n '10,20p' file.txt          <span class="c"># 只打印第10~20行</span>
+		sed -n '/error/p' file.log        <span class="c"># 只打印含error的行（等价于grep）</span>
+		sed -n '/^$/=' file.txt           <span class="c"># 打印空行的行号（=命令输出行号）</span>
+		sed -n 'p;n' file.txt             <span class="c"># 打印奇数行（p打印，n跳到下一行）</span>
+		sed -n 'n;p' file.txt             <span class="c"># 打印偶数行</span>
+		
+		<span class="c"># ===== sed 插入 a（行后）/ i（行前）/ c（替换整行） =====</span>
+		sed '5a\---新行---' file.txt      <span class="c"># 在第5行后面插入一行</span>
+		sed '5i\---插入行---' file.txt     <span class="c"># 在第5行前面插入一行</span>
+		sed '5c\---替换行---' file.txt     <span class="c"># 将第5行整行替换</span>
+		sed '/error/a\---发现错误---' file.log  <span class="c"># 在含error的行后面插入</span>
+		
+		<span class="c"># ===== sed -i 直接修改原文件 =====</span>
+		<span class="c"># 不加-i只输出到屏幕不修改文件。加-i直接改，危险！</span>
+		sed -i 's/error/ERROR/g' file.log <span class="c"># 直接修改原文件（不可恢复！）</span>
+		sed -i.bak 's/error/ERROR/g' file.log  <span class="c"># 先备份为file.log.bak再修改（推荐）</span>
+		sed -i -e 's/old/new/g' -e '/^#/d' config.sh  <span class="c"># 多操作：替换+删除注释</span>
+		
+		<span class="c"># ===== sed 多命令组合 =====</span>
+		<span class="c"># -e 指定多个命令，按顺序执行</span>
+		sed -e 's/error/ERROR/g' -e '/debug/d' file.log  <span class="c"># 替换error+删除debug行</span>
+		sed 's/old/new/g; /^#/d' file.txt  <span class="c"># 分号分隔多个命令，同上</span>
+		
+		<span class="c"># ===== sed 定界符替换 =====</span>
+		<span class="c"># 默认定界符是/，当模式或替换中含有/时可用其他字符</span>
+		sed 's#/usr/local#/opt#g' file.txt <span class="c"># 用#代替/，避免转义</span>
+		sed 's|/usr/local|/opt|g' file.txt <span class="c"># 用|代替</span>
+		sed 's@/usr/local@/opt@g' file.txt <span class="c"># 用@代替</span>
+		
+		<span class="c"># ===== sed 正则表达式高级用法 =====</span>
+		<span class="c"># -E 启用扩展正则（ERE），避免大量转义</span>
+		sed -E 's/[0-9]{3}-[0-9]{4}/(&)/g' file.txt  <span class="c"># &引用整个匹配内容</span>
+		sed -E 's/([a-z]+)@([a-z]+)/\1#\2/g' file.txt  <span class="c"># \1\2引用捕获组</span>
+		sed -n '/^[[:space:]]*#/p' config.sh  <span class="c"># 打印缩进过的注释行</span>
+		sed '/^#/d; /^$/d' file.txt       <span class="c"># 删除注释行和空行（常用清理）</span>
+		sed 's/^[[:space:]]*//' file.txt  <span class="c"># 删除行首空格</span>
+		sed 's/[[:space:]]*$//' file.txt  <span class="c"># 删除行尾空格</span>
+		sed 's/[[:space:]]\+/,/g' file.txt  <span class="c"># 将连续空格替换为逗号</span></code></pre></div>
+		
+		<h3>► awk 文本分析工具详解</h3>
+		<p>awk按行读取，按分隔符分割成字段（$1、$2...$NF），逐行执行模式匹配和动作。默认分隔符为空白（空格/Tab）。</p>
+		<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ===== awk 基本语法 =====</span>
+		<span class="c"># awk '模式 { 动作 }' 文件</span>
+		<span class="c"># 模式：可以是正则(/pattern/)、条件($3>100)、行号(NR==1)</span>
+		<span class="c"># 动作：print/printf/if/for/while等，用{}包裹</span>
+		<span class="c"># 没有模式时，对所有行执行动作</span>
+		
+		<span class="c"># ===== awk 打印字段 =====</span>
+		<span class="c"># $0 整行，$1 第一列，$2 第二列，$NF 最后一列</span>
+		<span class="c"># $(NF-1) 倒数第二列，$(NF-2) 倒数第三列</span>
+		awk '{print $0}' file.txt         <span class="c"># 打印整行（等价于cat）</span>
+		awk '{print $1, $3}' file.txt     <span class="c"># 打印第1和3列（逗号输出空格分隔）</span>
+		awk '{print $1, $NF}' file.txt    <span class="c"># 打印第1列和最后一列</span>
+		awk '{print $1, $(NF-1)}' file.txt <span class="c"># 打印第1列和倒数第二列</span>
+		
+		<span class="c"># ===== awk 指定分隔符 -F =====</span>
+		awk -F: '{print $1, $3}' /etc/passwd  <span class="c"># 冒号分隔，打印用户名和UID</span>
+		awk -F, '{print $1, $2}' data.csv     <span class="c"># 逗号分隔处理CSV</span>
+		awk -F'[:\t]' '{print $1}' file.txt   <span class="c"># 同时支持冒号和Tab分隔</span>
+		awk -F: 'BEGIN{OFS=" | "} {print $1, $3}' /etc/passwd  <span class="c"># 输出用|分隔</span>
+		
+		<span class="c"># ===== awk 内置变量详解 =====</span>
+		<span class="c"># NR: 当前行号（Number of Record）</span>
+		<span class="c"># NF: 当前行的字段数（Number of Field）</span>
+		<span class="c"># FS: 输入字段分隔符（默认空格Tab，可指定-F或赋值FS=）</span>
+		<span class="c"># OFS: 输出字段分隔符（默认空格，print逗号分隔时生效）</span>
+		<span class="c"># RS: 输入记录分隔符（默认换行符）</span>
+		<span class="c"># ORS: 输出记录分隔符（默认换行符）</span>
+		<span class="c"># FILENAME: 当前处理的文件名</span>
+		awk '{print NR": "$0}' file.txt    <span class="c"># 带行号输出（如 "1: 内容"）</span>
+		awk '{print NF, $0}' file.txt      <span class="c"># 打印每行的字段数+整行</span>
+		awk '{print "行"NR, "共"NF"列"}' file.txt  <span class="c"># 输出如 "行1 共5列"</span>
+		awk 'END{print "文件名:", FILENAME, "总行数:", NR}' file.txt  <span class="c"># 文件信息</span>
+		
+		<span class="c"># ===== awk BEGIN/END 块 =====</span>
+		<span class="c"># BEGIN: 在处理任何文件行之前执行一次（初始化变量、打印表头）</span>
+		<span class="c"># END: 在所有文件行处理完之后执行一次（汇总统计、打印结果）</span>
+		awk 'BEGIN{print "=== 报告开始 ==="} {print $0} END{print "=== 报告结束 ==="}' file.txt
+		awk 'BEGIN{FS=":"; print "用户名\tUID"} {print $1"\t"$3} END{print "共"NR"行"}' /etc/passwd
+		awk 'BEGIN{sum=0; count=0} {sum+=$3; count++} END{print "平均值:", sum/count}' data.txt
+		
+		<span class="c"># ===== awk 模式匹配 =====</span>
+		awk '/error/ {print $0}' file.log  <span class="c"># 只打印含error的行</span>
+		awk '/^#/ {print NR, $0}' config.sh  <span class="c"># 打印注释行及其行号</span>
+		awk '!/^#/ && !/^$/ {print $0}' config.sh  <span class="c"># 打印非注释非空行</span>
+		awk '$1 ~ /^192\.168\./ {print $0}' access.log  <span class="c"># 匹配第一列以192.168.开头</span>
+		awk '$1 !~ /^127\./ {print $0}' access.log  <span class="c"># 排除127.开头的行</span>
+		
+		<span class="c"># ===== awk 条件判断 =====</span>
+		awk '$3 &gt; 100 {print NR, $3, $1}' data.txt  <span class="c"># 第3列大于100</span>
+		awk '$3 &gt; 100 &amp;&amp; $3 &lt; 200 {print $0}' data.txt  <span class="c"># 100~200之间</span>
+		awk '$1 == "error" {count++} END{print "错误数:", count}' file.log  <span class="c"># 统计</span>
+		awk 'NR==1 {print "表头:", $0; next} {print "数据:", $0}' file.txt  <span class="c"># 跳过表头</span>
+		awk 'NR&gt;1 {print $0}' file.txt  <span class="c"># 跳过第一行（表头）</span>
+		
+		<span class="c"># ===== awk printf 格式化输出 =====</span>
+		<span class="c"># printf(format, 值1, 值2, ...) 控制列宽、对齐、精度</span>
+		awk -F: '{printf "%-20s %5s\n", $1, $3}' /etc/passwd  <span class="c"># 左对齐20字符+右对齐5字符</span>
+		awk '{printf "%-10s %8.2f\n", $1, $3}' data.txt  <span class="c"># 字符串左对齐10，数字右对齐8宽度2位小数</span>
+		awk 'BEGIN{printf "%+10s %+10s\n", "名称", "值"} {printf "%+10s %+10d\n", $1, $2}' file.txt
+		
+		<span class="c"># 格式化说明：%s字符串，%d整数，%f浮点数，%-左对齐，%+右对齐</span>
+		<span class="c"># %10s 宽度10，%.2f 两位小数，%8.2f 宽度8两位小数</span>
+		
+		<span class="c"># ===== awk 统计求和 =====</span>
+		awk '{sum += $3} END{print "总和:", sum}' data.txt  <span class="c"># 单列求和</span>
+		awk '{sum+=$3; count++} END{print "平均:", sum/count}' data.txt  <span class="c"># 平均值</span>
+		awk 'NR&gt;=2 {sum+=$3} END{print "总和:", sum}' data.txt  <span class="c"># 跳过表头求和</span>
+		awk 'BEGIN{max=0} $3&gt;max {max=$3; line=$0} END{print "最大值行:", line}' data.txt  <span class="c"># 找最大值</span>
+		
+		<span class="c"># ===== awk 数组与关联数组 =====</span>
+		<span class="c"># awk数组下标可以是字符串（关联数组），用于统计和去重</span>
+		awk '{count[$1]++} END{for(ip in count) print ip, count[ip]}' access.log  <span class="c"># IP统计</span>
+		awk '{status[$9]++} END{for(s in status) print s, status[s]}' access.log  <span class="c"># HTTP状态码统计</span>
+		awk '!seen[$0]++' file.txt       <span class="c"># 去重，只打印第一次出现的行</span>
+		awk '!seen[$1]++' file.txt       <span class="c"># 按第一列去重</span>
+		
+		<span class="c"># ===== awk 实战案例 =====</span>
+		<span class="c"># 查看CPU温度（从sensors输出过滤）</span>
+		sensors | awk '/Core/ {print $1, $2, $3}'
+		
+		<span class="c"># 查看内存使用率（从free输出提取百分比）</span>
+		free -h | awk '/^Mem/ {print "已用:", $3, "剩余:", $4}'
+		free -m | awk '/^Mem/ {printf "使用率: %.1f%%\n", $3/$2*100}'
+		
+		<span class="c"># 查看磁盘使用率超过80%的分区</span>
+		df -h | awk 'NR&gt;1 {gsub(/%/,"",$5); if($5 &gt; 80) print $1, $5"%"}'
+		
+		<span class="c"># 结合sed+awk：先sed替换，再awk提取</span>
+		cat /etc/passwd | sed 's/:/ /g' | awk '{print $1, $3}'
+		
+		<span class="c"># 过滤特定时间段的日志</span>
+		awk '$0 &gt;= "2026-08-01 00:00:00" &amp;&amp; $0 &lt;= "2026-08-01 23:59:59"' syslog
+		
+		<span class="c"># 统计日志中每个IP出现的次数，按次数排序</span>
+		awk '{count[$1]++} END{for(ip in count) print count[ip], ip}' access.log | sort -rn | head -10
+		
+		<span class="c"># 计算某列的总和和平均值</span>
+		awk 'NR&gt;1 {sum+=$3; count++} END{printf "总和: %.2f, 平均: %.2f, 行数: %d\n", sum, sum/count, count}' data.txt
+		
+		<span class="c"># 多列求和</span>
+		awk '{sum1+=$1; sum2+=$2; sum3+=$3} END{print sum1, sum2, sum3}' data.txt</code></pre></div>
+		<div class="note"><strong>sed vs awk 选择指南：</strong>sed 擅长行级替换、删除、插入，<code>s/旧/新/g</code> 是最常用操作；awk 擅长按列分割、统计汇总、格式化输出、报表生成。<strong>简单说：改内容用 sed，分析数据用 awk。</strong> 注意：<code>sed -i</code> 直接修改原文件不可恢复，改前先用 <code>-i.bak</code> 备份；<code>awk -F:</code> 指定分隔符，搞不清字段分隔符时先 <code>head -1 file | od -c</code> 查看实际字符。</div>
+		<div class="note"><strong>awk内置变量速查：</strong><code>$0</code> 整行 &nbsp; <code>$1~$NF</code> 各列 &nbsp; <code>NF</code> 字段数 &nbsp; <code>NR</code> 行号 &nbsp; <code>FNR</code> 当前文件行号（多文件时独立计数）&nbsp; <code>FS</code> 输入分隔符 &nbsp; <code>OFS</code> 输出分隔符 &nbsp; <code>RS</code> 行分隔符 &nbsp; <code>ORS</code> 输出行分隔符 &nbsp; <code>FILENAME</code> 文件名。<br>
+		<strong>常用模式：</strong><code>/pattern/</code> 正则匹配行 &nbsp; <code>$3 &gt; 100</code> 数值条件 &nbsp; <code>NR==1</code> 第一行（表头）&nbsp; <code>NR&gt;1</code> 跳过表头 &nbsp; <code>NR&gt;=2 &amp;&amp; NR&lt;=10</code> 指定行范围。</div>
+		<div class="note warn"><strong>sed和awk常见陷阱：</strong>1) sed <code>-i</code> 直接修改文件，没有备份的话不可恢复，<code>-i.bak</code> 养成备份习惯；2) sed 正则默认使用基本正则（BRE），<code>( )</code> 和 <code>+</code> 需要 <code>\( \)</code> 和 <code>\+</code>，加 <code>-E</code> 启用扩展正则；3) awk 中 <code>$</code> 符号在字符串中需要用 <code>"$"</code> 或转义，区分 <code>$1</code>（变量）和 <code>"$1"</code>（字符串$1）；4) awk 的 <code>print</code> 自动加换行，<code>printf</code> 不加；5) awk 数组无序，<code>for(i in arr)</code> 遍历顺序不确定，需要排序时用 <code>sort</code> 管道。</div>
+		</section>
+<!-- 第28章 -->
+	<section class="card" id="ch28">
+	<h2>28. 系统调优与Rocky Linux兼容</h2>
+	<p>系统调优涉及内核参数、资源限制、服务优化。本节同时标注 Ubuntu 24.04 与 Rocky Linux（RHEL 9系）的差异，方便双平台运维。</p>
+	<div class="code-card"><div class="code-head"><div class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><span class="lang">bash</span><button class="copy">复制</button></div><pre><code><span class="c"># ============================================</span>
+	<span class="c"># 内核参数调优（sysctl）</span>
+	<span class="c"># ============================================</span>
+	
+	<span class="c"># 查看所有内核参数</span>
+	sysctl -a | less
+	
+	<span class="c"># 临时修改内核参数（重启失效）</span>
+	sudo sysctl -w vm.swappiness=10
+	sudo sysctl -w net.core.somaxconn=65535
+	
+	<span class="c"># 永久修改：写入 /etc/sysctl.conf 或 /etc/sysctl.d/ 下</span>
+	echo "vm.swappiness=10" | sudo tee -a /etc/sysctl.conf
+	echo "net.core.somaxconn=65535" | sudo tee -a /etc/sysctl.conf
+	
+	<span class="c"># 重新加载所有sysctl配置（使永久修改生效）</span>
+	sudo sysctl -p
+	
+	<span class="c"># 常用优化参数：IO调度器（Ubuntu 24.04默认none/mq-deadline）</span>
+	cat /sys/block/sda/queue/scheduler
+	
+	<span class="c"># 修改IO调度器为none（NVMe推荐）</span>
+	echo none | sudo tee /sys/block/sda/queue/scheduler
+	
+	<span class="c"># ============================================</span>
+	<span class="c"># 资源限制（ulimit）</span>
+	<span class="c"># ============================================</span>
+	
+	<span class="c"># 查看当前用户的资源限制，-a=all</span>
+	ulimit -a
+	
+	<span class="c"># 查看文件句柄限制（-n=open files）</span>
+	ulimit -n
+	
+	<span class="c"># 临时修改最大文件句柄数（当前shell生效）</span>
+	ulimit -n 65535
+	
+	<span class="c"># 永久修改：编辑limits.conf</span>
+	sudo nano /etc/security/limits.conf
+	<span class="c"># 添加：* soft nofile 65535</span>
+	<span class="c"># 添加：* hard nofile 65535</span>
+	
+	<span class="c"># ============================================</span>
+	<span class="c"># systemd启动分析</span>
+	<span class="c"># ============================================</span>
+	
+	<span class="c"># 查看系统启动总耗时</span>
+	systemd-analyze
+	
+	<span class="c"># 查看每个服务启动耗时（找到最慢的服务）</span>
+	systemd-analyze blame
+	
+	<span class="c"># 查看启动关键链（耗时单位）</span>
+	systemd-analyze critical-chain
+	
+	<span class="c"># 查看系统的安全配置评分</span>
+	systemd-analyze security
+	
+	<span class="c"># ============================================</span>
+	<span class="c"># Swappiness与Swap管理</span>
+	<span class="c"># ============================================</span>
+	
+	<span class="c"># 查看swappiness值（0=尽量不用swap，100=积极使用swap）</span>
+	cat /proc/sys/vm/swappiness
+	
+	<span class="c"># Ubuntu 24.04默认60，服务器建议10~30以减少swap使用</span>
+	sudo sysctl -w vm.swappiness=10
+	
+	<span class="c"># 查看swap使用情况</span>
+	swapon --show
+	free -h
+	
+	<span class="c"># 创建swap文件（2GB）</span>
+	sudo fallocate -l 2G /swapfile
+	sudo chmod 600 /swapfile
+	sudo mkswap /swapfile
+	sudo swapon /swapfile
+	
+	<span class="c"># 永久启用swap：写入/etc/fstab</span>
+	<span class="c"># /swapfile none swap sw 0 0</span>
+	
+	<span class="c"># ============================================</span>
+	<span class="c"># tuned性能调优（RHEL/Rocky默认，Ubuntu可选安装）</span>
+	<span class="c"># ============================================</span>
+	
+	<span class="c"># 安装tuned（Ubuntu可选，Rocky默认已安装）</span>
+	sudo apt install tuned -y        <span class="c"># Ubuntu</span>
+	sudo dnf install tuned -y        <span class="c"># Rocky/RHEL</span>
+	
+	<span class="c"># 查看当前profile（throughput-performance/balanced/latency-performance等）</span>
+	tuned-adm active
+	
+	<span class="c"># 列出所有可用profile</span>
+	tuned-adm list
+	
+	<span class="c"># 切换到高性能模式</span>
+	sudo tuned-adm profile throughput-performance
+	
+	<span class="c"># 推荐使用建议的profile</span>
+	sudo tuned-adm recommend
+	
+	<span class="c"># ============================================</span>
+	<span class="c"># Rocky Linux vs Ubuntu 关键差异速查</span>
+	<span class="c"># ============================================</span>
+	<span class="c"># 包管理器：apt (Ubuntu) vs dnf (Rocky)</span>
+	<span class="c"># 防火墙：ufw (Ubuntu) vs firewalld (Rocky)</span>
+	<span class="c"># 网络配置：Netplan/NetworkManager (Ubuntu) vs NetworkManager (Rocky)</span>
+	<span class="c"># 默认文件系统：ext4 (Ubuntu) vs xfs (Rocky)</span>
+	<span class="c"># SELinux：AppArmor (Ubuntu) vs SELinux (Rocky，默认enforcing)</span>
+	<span class="c"># init系统：systemd 两者相同</span></code></pre></div>
+	<div class="note"><strong>Rocky Linux 常用命令对照：</strong><code>dnf install</code> 对应 <code>apt install</code>；<code>dnf update</code> 对应 <code>apt upgrade</code>；<code>firewall-cmd</code> 对应 <code>ufw</code>；<code>systemctl enable --now firewalld</code> 启用防火墙；<code>getenforce</code> 查看SELinux状态，<code>setenforce 0</code> 临时关闭（仅调试用）；<code>nmcli</code> 在Ubuntu和Rocky上用法基本相同。</div>
+	<div class="note warn"><strong>跨平台注意事项：</strong>Ubuntu <code>sudo -i</code> 提权 vs Rocky <code>sudo -i</code> 同样可用；Rocky 默认root密码可用 <code>su -</code>；SELinux 在Rocky默认enforcing，安装服务后注意 <code>restorecon -Rv /path</code> 恢复上下文；Rocky 的 <code>/etc/sysconfig/</code> 存放服务配置（如 <code>/etc/sysconfig/network-scripts/</code>），Ubuntu 通常没有。</div>
+	</section>
+	
+	  </div>
+</div>
+
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<div class="toast" id="toast">已复制到剪贴板</div>
+
+<script>
+(function(){
+  // Progress bar
+  var pf = document.getElementById('progressFill');
+  window.addEventListener('scroll', function(){
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    pf.style.width = h > 0 ? (window.scrollY / h * 100) + '%' : '0%';
+  });
+
+  // Back to top
+  var bt = document.getElementById('back-top');
+  window.addEventListener('scroll', function(){
+    bt.classList.toggle('show', window.scrollY > 400);
+  });
+
+  // TOC highlight
+  var sections = document.querySelectorAll('.card');
+  var links = document.querySelectorAll('.toc-chap, .toc-sub');
+  window.addEventListener('scroll', function(){
+    var cur = -1;
+    var scrollY = window.scrollY + 120;
+    for(var i=0;i<sections.length;i++){
+      if(sections[i].offsetTop <= scrollY) cur = i;
+    }
+    links.forEach(function(l){ l.classList.remove('active'); });
+    if(cur >= 0){
+      var id = sections[cur].getAttribute('id');
+      var match = document.querySelector('a[href="#'+id+'"]');
+      if(match) match.classList.add('active');
+    }
+  });
+
+  // Copy buttons with event delegation
+  var toast = document.getElementById('toast');
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.copy');
+    if(!btn) return;
+    var code = btn.closest('.code-card').querySelector('code');
+    var text = code.textContent.replace(/\u00a0/g, ' ').trim();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showCopied(btn);
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showCopied(btn);
+    }
+  });
+  function showCopied(btn){
+    var old = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    toast.classList.add('show');
+    setTimeout(function(){
+      btn.textContent = old;
+      btn.classList.remove('copied');
+      toast.classList.remove('show');
+    }, 1600);
+  }
+})();
+</script>
+</body>
+</html>
